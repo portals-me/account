@@ -16,7 +16,7 @@ import (
 
 	"github.com/guregu/dynamo"
 
-	. "github.com/myuon/portals-me/functions/authenticate/lib"
+	. "github.com/portals-me/account/functions/authenticate/lib"
 )
 
 var authTableName = os.Getenv("authTable")
