@@ -1,0 +1,12 @@
+{
+  "name": "portals-me-account",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "myuon <ioi.joi.koi.loi@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@pulumi/aws": "^0.18.8",
+    "@pulumi/awsx": "^0.18.5",
+    "@pulumi/pulumi": "^0.17.17"
+  }
+}
