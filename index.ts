@@ -106,7 +106,7 @@ new aws.lambda.Permission('authenticate-post-permission', {
   action: 'lambda:InvokeFunction',
   function: handlerAuth.name,
   principal: 'apigateway.amazonaws.com',
-  sourceArn: pulumi.interpolate`arn:aws:execute-api:${aws.getRegion().then(val => val.name)}:${current.accountId}:${accountAPI.id}/*/${authneticatePostMethod.httpMethod}/${authenticateResource.path}`,
+  sourceArn: pulumi.interpolate`arn:aws:execute-api:${aws.getRegion().then(val => val.name)}:${current.accountId}:${accountAPI.id}/*/${authneticatePostMethod.httpMethod}${authenticateResource.path}`,
 });
 const accountAPIDeployment = new aws.apigateway.Deployment(
   'account-api-deployment',
