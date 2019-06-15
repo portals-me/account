@@ -16,6 +16,7 @@ import (
 
 	"github.com/guregu/dynamo"
 
+	"github.com/portals-me/account/functions/authenticate/account"
 	. "github.com/portals-me/account/functions/authenticate/lib"
 )
 
@@ -31,11 +32,6 @@ type Record struct {
 type Input struct {
 	AuthType string      `json:"auth_type"`
 	Data     interface{} `json:"data"`
-}
-
-type JwtPayload struct {
-	ID       string `json:"id"`
-	UserName string `json:"user_name"`
 }
 
 type AuthMethod interface {
@@ -60,7 +56,7 @@ func (password Password) createJwt(table dynamo.Table) (string, error) {
 		return "", errors.Wrap(err, "Invalid Password")
 	}
 
-	payload, err := json.Marshal(JwtPayload{
+	payload, err := json.Marshal(account.Account{
 		ID:       record.ID,
 		UserName: password.UserName,
 	})
