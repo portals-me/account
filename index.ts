@@ -108,29 +108,62 @@ new aws.lambda.Permission('authenticate-post-permission', {
   principal: 'apigateway.amazonaws.com',
   sourceArn: pulumi.interpolate`arn:aws:execute-api:${aws.getRegion().then(val => val.name)}:${current.accountId}:${accountAPI.id}/*/${authneticatePostMethod.httpMethod}/${authenticateResource.path}`,
 });
-const accountAPIDeployment = new aws.apigateway.Deployment('account-api-deployment', {
-  restApi: accountAPI,
-  stageName: config.stage,
-}, {
-    dependsOn: [authenticatePostIntegration]
-  });
+const accountAPIDeployment = new aws.apigateway.Deployment(
+  'account-api-deployment',
+  {
+    restApi: accountAPI,
+    stageName: config.stage,
+    stageDescription: new Date().toLocaleString(),
+  },
+  {
+    dependsOn: [authenticatePostIntegration],
+  }
+);
 
-/*
-const endpoint = new awsx.apigateway.API('auth-api', {
-  routes: [
-    {
-      path: '/authenticate',
-      method: 'POST',
-      eventHandler: aws.lambda.Function.get('auth-api-lambda', handlerAuth.id),
-    },
-    {
-      path: '/authenticate',
-      target: {
-      } as awsx.apigateway.IntegrationTarget
-    }
-  ],
+const authenticatePostOptionsMethod = new aws.apigateway.Method('authenticate-post-options', {
+  authorization: 'NONE',
+  httpMethod: 'OPTIONS',
+  resourceId: authenticateResource.id,
+  restApi: accountAPI,
 });
-*/
+new aws.apigateway.Integration('authenticate-post-options', {
+  httpMethod: 'OPTIONS',
+  resourceId: authenticateResource.id,
+  restApi: accountAPI,
+  type: 'MOCK',
+  passthroughBehavior: 'WHEN_NO_MATCH',
+  requestTemplates: {
+    'application/json': '{"statusCode": 200}'
+  },
+});
+const response200 = new aws.apigateway.MethodResponse('200', {
+  httpMethod: authenticatePostOptionsMethod.httpMethod,
+  resourceId: authenticateResource.id,
+  restApi: accountAPI,
+  statusCode: '200',
+  responseModels: {
+    'application/json': 'Empty'
+  },
+  responseParameters: {
+    'method.response.header.Access-Control-Allow-Headers': false,
+    'method.response.header.Access-Control-Allow-Methods': false,
+    'method.response.header.Access-Control-Allow-Origin': false,
+  }
+})
+new aws.apigateway.IntegrationResponse('authenticate-post-options', {
+  httpMethod: 'OPTIONS',
+  resourceId: authenticateResource.id,
+  restApi: accountAPI,
+  statusCode: response200.statusCode,
+  responseParameters: {
+    'method.response.header.Access-Control-Allow-Headers': "'Authorization,Content-Type,X-Amz-Date,X-Amz-Security-Token,X-Api-Key'",
+    'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,HEAD,GET,POST,PUT,PATCH,DELETE'",
+    'method.response.header.Access-Control-Allow-Origin': "'*'"
+  },
+  responseTemplates: {
+    'application/json': ''
+  },
+});
 
 export const output = {
   endpoint: accountAPIDeployment.invokeUrl,
