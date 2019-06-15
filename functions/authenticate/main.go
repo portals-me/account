@@ -129,7 +129,13 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}
 
-	return events.APIGatewayProxyResponse{Body: jwt, StatusCode: 200}, nil
+	return events.APIGatewayProxyResponse{
+		Body: jwt,
+		Headers: map[string]string{
+			"Access-Control-Allow-Origin": "*",
+		},
+		StatusCode: 200,
+	}, nil
 }
 
 func main() {
