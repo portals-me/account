@@ -48,7 +48,7 @@ export const createLambdaMethod = (name: string, option: {
       'application/json': '{"statusCode": 200}'
     },
   });
-  const response200 = new aws.apigateway.MethodResponse('200', {
+  const response200 = new aws.apigateway.MethodResponse(`${name}-response-200`, {
     httpMethod: optionsMethod.httpMethod,
     resourceId: option.resource.id,
     restApi: option.restApi,
@@ -62,7 +62,7 @@ export const createLambdaMethod = (name: string, option: {
       'method.response.header.Access-Control-Allow-Origin': false,
     }
   })
-  new aws.apigateway.IntegrationResponse('authenticate-post-options', {
+  new aws.apigateway.IntegrationResponse(`${name}-post-options`, {
     httpMethod: 'OPTIONS',
     resourceId: option.resource.id,
     restApi: option.restApi,
