@@ -81,13 +81,13 @@ export const createLambdaMethod = (name: string, option: {
     restApi: option.restApi,
     uri: pulumi.interpolate`arn:aws:apigateway:${aws.getRegion().then(val => val.name)}:lambda:path/2015-03-31/functions/${option.handler.arn}/invocations`,
     ...option.integration
-  });
+  }, { dependsOn: [method] });
   new aws.lambda.Permission(name, {
     action: 'lambda:InvokeFunction',
     function: option.handler.name,
     principal: 'apigateway.amazonaws.com',
     sourceArn: pulumi.interpolate`arn:aws:execute-api:${aws.getRegion().then(val => val.name)}:${current.accountId}:${option.restApi.id}/*/${method.httpMethod}${option.resource.path}`,
-  });
+  }, { dependsOn: [method] });
 
   return integration;
 };
