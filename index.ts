@@ -2,7 +2,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as chp from 'child_process';
 import * as util from 'util';
-import { createLambdaMethod } from "./infrastructure/apigateway";
+import { createLambdaMethod, createCORSResource } from "./infrastructure/apigateway";
 
 const current = pulumi.output(aws.getCallerIdentity({}));
 
@@ -117,7 +117,7 @@ const accountAPI = new aws.apigateway.RestApi('account-api', {
   name: `${config.service}-${config.stage}`
 });
 
-const authenticateResource = new aws.apigateway.Resource('authenticate', {
+const authenticateResource = createCORSResource('authenticate', {
   parentId: accountAPI.rootResourceId,
   pathPart: 'authenticate',
   restApi: accountAPI,
@@ -132,7 +132,7 @@ const authenticateLambdaIntegration = createLambdaMethod('authenticate', {
   handler: handlerAuth,
 });
 
-const twitterResource = new aws.apigateway.Resource('twitter', {
+const twitterResource = createCORSResource('twitter', {
   parentId: accountAPI.rootResourceId,
   pathPart: 'twitter',
   restApi: accountAPI,
