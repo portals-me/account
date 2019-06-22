@@ -17,7 +17,17 @@ const parameter = {
   jwtPrivate: aws.ssm.getParameter({
     name: `${config.service}-${config.stage}-jwt-private`,
     withDecryption: true,
-  }).then(result => result.value)
+  }).then(result => result.value),
+  twitter: {
+    client: aws.ssm.getParameter({
+      name: `${config.service}-twitter-apiKey`,
+      withDecryption: true,
+    }).then(result => result.value),
+    secret: aws.ssm.getParameter({
+      name: `${config.service}-twitter-apiKey-secret`,
+      withDecryption: true,
+    }).then(result => result.value),
+  }
 };
 
 const accountTable = new aws.dynamodb.Table('account-table', {
@@ -80,6 +90,29 @@ const handlerAuth = new aws.lambda.Function('handler-auth', {
   name: `${config.service}-${config.stage}-auth`
 });
 
+const handlerTwitter = new aws.lambda.Function('handler-twitter', {
+  runtime: aws.lambda.Go1dxRuntime,
+  code: new pulumi.asset.FileArchive((async () => {
+    await chpExec('GOOS=linux GOARCH=amd64 go build -o ./dist/functions/twitter/main functions/twitter/main.go');
+    await chpExec('zip -j ./dist/functions/twitter/main.zip ./dist/functions/twitter/main');
+
+    return './dist/functions/twitter/main.zip';
+  })()),
+  timeout: 10,
+  memorySize: 128,
+  handler: 'main',
+  role: lambdaRole.arn,
+  environment: {
+    variables: {
+      timestamp: new Date().toLocaleString(),
+      clientKey: parameter.twitter.client,
+      clientSecret: parameter.twitter.secret,
+    }
+  },
+  name: `${config.service}-${config.stage}-twitter`
+});
+
+
 const accountAPI = new aws.apigateway.RestApi('account-api', {
   name: `${config.service}-${config.stage}`
 });
@@ -99,6 +132,30 @@ const authenticateLambdaIntegration = createLambdaMethod('authenticate', {
   handler: handlerAuth,
 });
 
+const twitterResource = new aws.apigateway.Resource('twitter', {
+  parentId: accountAPI.rootResourceId,
+  pathPart: 'twitter',
+  restApi: accountAPI,
+});
+
+const twitterPostIntegration = createLambdaMethod('twitter-post', {
+  authorization: 'NONE',
+  httpMethod: 'POST',
+  resource: twitterResource,
+  restApi: accountAPI,
+  integrationType: 'AWS_PROXY',
+  handler: handlerTwitter,
+});
+
+const twitterGetIntegration = createLambdaMethod('twitter-get', {
+  authorization: 'NONE',
+  httpMethod: 'GET',
+  resource: twitterResource,
+  restApi: accountAPI,
+  integrationType: 'AWS_PROXY',
+  handler: handlerTwitter,
+});
+
 const accountAPIDeployment = new aws.apigateway.Deployment(
   'account-api-deployment',
   {
@@ -107,7 +164,7 @@ const accountAPIDeployment = new aws.apigateway.Deployment(
     stageDescription: new Date().toLocaleString(),
   },
   {
-    dependsOn: [authenticateLambdaIntegration]
+    dependsOn: [authenticateLambdaIntegration, twitterPostIntegration, twitterGetIntegration]
   }
 );
 
