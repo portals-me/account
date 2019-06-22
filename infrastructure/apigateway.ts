@@ -76,7 +76,7 @@ export const createLambdaMethod = (name: string, option: {
   });
   const integration = new aws.apigateway.Integration(name, {
     httpMethod: method.httpMethod,
-    integrationHttpMethod: option.httpMethod,
+    integrationHttpMethod: 'POST',
     resourceId: option.resource.id,
     restApi: option.restApi,
     uri: pulumi.interpolate`arn:aws:apigateway:${aws.getRegion().then(val => val.name)}:lambda:path/2015-03-31/functions/${option.handler.arn}/invocations`,
