@@ -128,7 +128,9 @@ const authenticateLambdaIntegration = createLambdaMethod('authenticate', {
   httpMethod: 'POST',
   resource: authenticateResource,
   restApi: accountAPI,
-  integrationType: 'AWS_PROXY',
+  integration: {
+    type: 'AWS_PROXY',
+  },
   handler: handlerAuth,
 });
 
@@ -143,7 +145,9 @@ const twitterPostIntegration = createLambdaMethod('twitter-post', {
   httpMethod: 'POST',
   resource: twitterResource,
   restApi: accountAPI,
-  integrationType: 'AWS_PROXY',
+  integration: {
+    type: 'AWS_PROXY',
+  },
   handler: handlerTwitter,
 });
 
@@ -152,8 +156,16 @@ const twitterGetIntegration = createLambdaMethod('twitter-get', {
   httpMethod: 'GET',
   resource: twitterResource,
   restApi: accountAPI,
-  integrationType: 'AWS_PROXY',
+  integration: {
+    type: 'AWS_PROXY',
+  },
   handler: handlerTwitter,
+  method: {
+    requestParameters: {
+      'method.request.querystring.oauth_token': true,
+      'method.request.querystring.oauth_verifier': true,
+    }
+  },
 });
 
 const accountAPIDeployment = new aws.apigateway.Deployment(
