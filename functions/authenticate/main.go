@@ -23,20 +23,17 @@ import (
 var authTableName = os.Getenv("authTable")
 var jwtPrivateKey = os.Getenv("jwtPrivate")
 
+// ---------------
+// DynamoDB Record
+
 type Record struct {
 	ID        string `dynamo:"id"`
 	Sort      string `dynamo:"sort"`
 	CheckData string `dynamo:"check_data"`
 }
 
-type Input struct {
-	AuthType string      `json:"auth_type"`
-	Data     interface{} `json:"data"`
-}
-
-type AuthMethod interface {
-	createJwt(table dynamo.Table) (string, error)
-}
+// ----------------
+// User account with password implementation
 
 type Password struct {
 	UserName string `json:"user_name"`
@@ -75,6 +72,20 @@ func (password Password) createJwt(table dynamo.Table) (string, error) {
 	return string(token), nil
 }
 
+// -----------------------
+// Authentication part starts from here
+
+type AuthMethod interface {
+	createJwt(table dynamo.Table) (string, error)
+}
+
+type Input struct {
+	AuthType string      `json:"auth_type"`
+	Data     interface{} `json:"data"`
+}
+
+// Crate an Auth method from requestBody
+// This function should an instance constructing function
 func createAuthMethod(body string) (AuthMethod, error) {
 	var input Input
 	if err := json.Unmarshal([]byte(body), &input); err != nil {
@@ -90,6 +101,7 @@ func createAuthMethod(body string) (AuthMethod, error) {
 		}
 
 		return password, nil
+	} else if input.AuthType == "twitter" {
 	}
 
 	return nil, errors.New("Unsupported auth_type: " + input.AuthType)
