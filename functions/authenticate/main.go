@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -16,12 +17,15 @@ import (
 
 	"github.com/guregu/dynamo"
 
+	"github.com/gomodule/oauth1/oauth"
 	"github.com/portals-me/account/functions/authenticate/account"
 	. "github.com/portals-me/account/functions/authenticate/lib"
 )
 
 var authTableName = os.Getenv("authTable")
 var jwtPrivateKey = os.Getenv("jwtPrivate")
+var twitterClientKey = os.Getenv("twitterClientKey")
+var twitterClientSecret = os.Getenv("twitterClientSecret")
 
 // ---------------
 // DynamoDB Record
@@ -56,6 +60,86 @@ func (password Password) createJwt(table dynamo.Table) (string, error) {
 	payload, err := json.Marshal(account.Account{
 		ID:       record.ID,
 		UserName: password.UserName,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	signer := ES256Signer{
+		Key: jwtPrivateKey,
+	}
+	token, err := signer.Sign(payload)
+	if err != nil {
+		return "", errors.Wrap(err, "sign failed")
+	}
+
+	return string(token), nil
+}
+
+// ----------------------
+// Twitter implementation
+
+type Twitter struct {
+	CredentialToken  string `json:"credential_token"`
+	CredentialSecret string `json:"credential_secret"`
+}
+
+type TwitterUser struct {
+	ID              string `json:"id_str"`
+	ScreenName      string `json:"screen_name"`
+	ProfileImageURL string `json:"profile_image_url"`
+}
+
+func GetTwitterClient() *oauth.Client {
+	return &oauth.Client{
+		TemporaryCredentialRequestURI: "https://api.twitter.com/oauth/request_token",
+		ResourceOwnerAuthorizationURI: "https://api.twitter.com/oauth/authorize",
+		TokenRequestURI:               "https://api.twitter.com/oauth/access_token",
+		Credentials: oauth.Credentials{
+			Token:  twitterClientKey,
+			Secret: twitterClientSecret,
+		},
+	}
+}
+
+func (twitter Twitter) GetTwitterUser(user *TwitterUser) error {
+	cred := oauth.Credentials{
+		Token:  twitter.CredentialToken,
+		Secret: twitter.CredentialSecret,
+	}
+
+	client := GetTwitterClient()
+	resp, err := client.Get(nil, &cred, "https://api.twitter.com/1.1/account/verify_credentials.json", url.Values{})
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(user)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (twitter Twitter) createJwt(table dynamo.Table) (string, error) {
+	var user TwitterUser
+	if err := twitter.GetTwitterUser(&user); err != nil {
+		return "", err
+	}
+
+	var record Record
+	if err := table.
+		Get("sort", "twitter##"+user.ID).
+		Index("auth").
+		One(&record); err != nil {
+		return "", errors.New("Twitter user not found: " + user.ID)
+	}
+
+	payload, err := json.Marshal(account.Account{
+		ID:       record.ID,
+		UserName: user.ScreenName,
 	})
 	if err != nil {
 		panic(err)

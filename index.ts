@@ -85,6 +85,8 @@ const handlerAuth = new aws.lambda.Function('handler-auth', {
       timestamp: new Date().toLocaleString(),
       authTable: accountTable.name,
       jwtPrivate: parameter.jwtPrivate,
+      twitterClientKey: parameter.twitter.client,
+      twitterClientSecret: parameter.twitter.secret,
     }
   },
   name: `${config.service}-${config.stage}-auth`
