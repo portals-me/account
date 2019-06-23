@@ -86,8 +86,9 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 			return events.APIGatewayProxyResponse{}, err
 		}
 		raw, _ := json.Marshal(map[string]interface{}{
-			"credential": tokenCred.Token + "." + tokenCred.Secret,
-			"account":    account,
+			"credential_token":  tokenCred.Token,
+			"credential_secret": tokenCred.Secret,
+			"account":           account,
 		})
 
 		return events.APIGatewayProxyResponse{

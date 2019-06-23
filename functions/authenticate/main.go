@@ -186,6 +186,14 @@ func createAuthMethod(body string) (AuthMethod, error) {
 
 		return password, nil
 	} else if input.AuthType == "twitter" {
+		var twitter Twitter
+
+		data, _ := json.Marshal(input.Data)
+		if err := json.Unmarshal([]byte(data), &twitter); err != nil {
+			return nil, errors.Wrap(err, "Unmarshal twitter failed")
+		}
+
+		return twitter, nil
 	}
 
 	return nil, errors.New("Unsupported auth_type: " + input.AuthType)
