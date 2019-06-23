@@ -30,6 +30,22 @@ const parameter = {
   }
 };
 
+const lambdaRole = new aws.iam.Role('auth-lambda-role', {
+  assumeRolePolicy: aws.iam.getPolicyDocument({
+    statements: [{
+      actions: ['sts:AssumeRole'],
+      principals: [{
+        identifiers: ['lambda.amazonaws.com'],
+        type: 'Service'
+      }],
+    }]
+  }).then(result => result.json),
+})
+new aws.iam.RolePolicyAttachment('auth-lambda-role-lambdafull', {
+  role: lambdaRole,
+  policyArn: aws.iam.AWSLambdaFullAccess,
+});
+
 const accountTable = new aws.dynamodb.Table('account-table', {
   attributes: [
     {
@@ -50,22 +66,37 @@ const accountTable = new aws.dynamodb.Table('account-table', {
     rangeKey: 'id',
     projectionType: 'ALL',
   }],
+  streamEnabled: true,
+  streamViewType: 'NEW_IMAGE'
 });
 
-const lambdaRole = new aws.iam.Role('auth-lambda-role', {
-  assumeRolePolicy: aws.iam.getPolicyDocument({
-    statements: [{
-      actions: ['sts:AssumeRole'],
-      principals: [{
-        identifiers: ['lambda.amazonaws.com'],
-        type: 'Service'
-      }],
-    }]
-  }).then(result => result.json),
-})
-new aws.iam.RolePolicyAttachment('auth-lambda-role-lambdafull', {
-  role: lambdaRole,
-  policyArn: aws.iam.AWSLambdaFullAccess,
+const accountTableEventTopic = new aws.sns.Topic('account-table-event-topic', {
+  name: `${config.service}-${config.stage}-account-table-event-topic`
+});
+
+const accountTableEventSubscription = new aws.lambda.Function('account-table-event-subscription', {
+  runtime: aws.lambda.Go1dxRuntime,
+  code: new pulumi.asset.FileArchive((async () => {
+    await chpExec('GOOS=linux GOARCH=amd64 go build -o ./dist/functions/account-table-subscription/main functions/account-table-subscription/main.go');
+    await chpExec('zip -j ./dist/functions/account-table-subscription/main.zip ./dist/functions/account-table-subscription/main');
+
+    return './dist/functions/account-table-subscription/main.zip';
+  })()),
+  timeout: 10,
+  memorySize: 128,
+  handler: 'main',
+  role: lambdaRole.arn,
+  environment: {
+    variables: {
+      timestamp: new Date().toLocaleString(),
+      accountTableSubscriptionTopicArn: accountTableEventTopic.arn,
+    }
+  },
+  name: `${config.service}-${config.stage}-account-table-event-subscription`
+});
+
+const accountTableSubscription = new aws.dynamodb.TableEventSubscription('account-table-subscription', accountTable, accountTableEventSubscription, {
+  startingPosition: 'TRIM_HORIZON'
 });
 
 const handlerAuth = new aws.lambda.Function('handler-auth', {
