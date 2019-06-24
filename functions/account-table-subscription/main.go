@@ -21,14 +21,17 @@ var topicArn = os.Getenv("accountTableSubscriptionTopicArn")
 
 func handler(ctx context.Context, event events.DynamoDBEvent) error {
 	for _, record := range event.Records {
-		jsn, _ := json.Marshal(record)
+		// Filter only "detail" part (user information)
+		if record.Change.Keys["sort"].String() == "detail" {
+			jsn, _ := json.Marshal(record)
 
-		_, err := SNS.Publish(&sns.PublishInput{
-			Message:  aws.String(string(jsn)),
-			TopicArn: aws.String(topicArn),
-		})
-		if err != nil {
-			return errors.Wrapf(err, "SNS publich failed: %+v", record)
+			_, err := SNS.Publish(&sns.PublishInput{
+				Message:  aws.String(string(jsn)),
+				TopicArn: aws.String(topicArn),
+			})
+			if err != nil {
+				return errors.Wrapf(err, "SNS publich failed: %+v", record)
+			}
 		}
 	}
 
