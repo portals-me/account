@@ -18,14 +18,20 @@ import (
 	"github.com/guregu/dynamo"
 
 	"github.com/gomodule/oauth1/oauth"
-	"github.com/portals-me/account/functions/authenticate/account"
 	. "github.com/portals-me/account/functions/authenticate/lib"
+
+	"github.com/portals-me/account/lib/user"
 )
 
 var authTableName = os.Getenv("authTable")
 var jwtPrivateKey = os.Getenv("jwtPrivate")
 var twitterClientKey = os.Getenv("twitterClientKey")
 var twitterClientSecret = os.Getenv("twitterClientSecret")
+
+type AuthMethod interface {
+	// Returns idp ID
+	obtainUserID(table dynamo.Table) (string, error)
+}
 
 // ---------------
 // DynamoDB Record
@@ -44,7 +50,7 @@ type Password struct {
 	Password string `json:"password"`
 }
 
-func (password Password) createJwt(table dynamo.Table) (string, error) {
+func (password Password) obtainUserID(table dynamo.Table) (string, error) {
 	var record Record
 	if err := table.
 		Get("sort", "name-pass##"+password.UserName).
@@ -57,23 +63,7 @@ func (password Password) createJwt(table dynamo.Table) (string, error) {
 		return "", errors.Wrap(err, "Invalid Password")
 	}
 
-	payload, err := json.Marshal(account.Account{
-		ID:       record.ID,
-		UserName: password.UserName,
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	signer := ES256Signer{
-		Key: jwtPrivateKey,
-	}
-	token, err := signer.Sign(payload)
-	if err != nil {
-		return "", errors.Wrap(err, "sign failed")
-	}
-
-	return string(token), nil
+	return record.ID, nil
 }
 
 // ----------------------
@@ -123,7 +113,7 @@ func (twitter Twitter) GetTwitterUser(user *TwitterUser) error {
 	return nil
 }
 
-func (twitter Twitter) createJwt(table dynamo.Table) (string, error) {
+func (twitter Twitter) obtainUserID(table dynamo.Table) (string, error) {
 	var user TwitterUser
 	if err := twitter.GetTwitterUser(&user); err != nil {
 		return "", err
@@ -137,31 +127,11 @@ func (twitter Twitter) createJwt(table dynamo.Table) (string, error) {
 		return "", errors.New("Twitter user not found: " + user.ID)
 	}
 
-	payload, err := json.Marshal(account.Account{
-		ID:       record.ID,
-		UserName: user.ScreenName,
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	signer := ES256Signer{
-		Key: jwtPrivateKey,
-	}
-	token, err := signer.Sign(payload)
-	if err != nil {
-		return "", errors.Wrap(err, "sign failed")
-	}
-
-	return string(token), nil
+	return record.ID, nil
 }
 
 // -----------------------
 // Authentication part starts from here
-
-type AuthMethod interface {
-	createJwt(table dynamo.Table) (string, error)
-}
 
 type Input struct {
 	AuthType string      `json:"auth_type"`
@@ -208,6 +178,23 @@ func tryDecodeBase64(s string) string {
 	return string(decoded)
 }
 
+func createJwt(userInfo user.UserInfo) (string, error) {
+	payload, err := json.Marshal(userInfo)
+	if err != nil {
+		panic(err)
+	}
+
+	signer := ES256Signer{
+		Key: jwtPrivateKey,
+	}
+	token, err := signer.Sign(payload)
+	if err != nil {
+		return "", errors.Wrap(err, "sign failed")
+	}
+
+	return string(token), nil
+}
+
 /*	POST /authenticate
 
 	expects Input
@@ -228,7 +215,23 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	db := dynamo.NewFromIface(dynamodb.New(sess))
 	authTable := db.Table(authTableName)
 
-	jwt, err := method.createJwt(authTable)
+	// Get Idp ID
+	idpID, err := method.obtainUserID(authTable)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
+	}
+
+	// Get UserInfo from "detail" part
+	var record user.UserInfoDDB
+	if err := authTable.
+		Get("id", idpID).
+		Range("sort", dynamo.Equal, "detail").
+		One(&record); err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 404}, nil
+	}
+
+	// Create JWT
+	jwt, err := createJwt(record.UserInfo)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}
