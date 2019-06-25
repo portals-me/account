@@ -1,17 +1,12 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
-import * as chp from 'child_process';
-import * as util from 'util';
 import { createLambdaMethod, createCORSResource } from "./infrastructure/apigateway";
-
-const current = pulumi.output(aws.getCallerIdentity({}));
+import { createLambdaFunction } from "./infrastructure/lambda";
 
 const config = {
   service: new pulumi.Config().name,
   stage: pulumi.getStack(),
 };
-
-const chpExec = util.promisify(chp.exec);
 
 const parameter = {
   jwtPrivate: aws.ssm.getParameter({
@@ -74,77 +69,55 @@ const accountTableEventTopic = new aws.sns.Topic('account-table-event-topic', {
   name: `${config.service}-${config.stage}-account-table-event-topic`
 });
 
-const accountTableEventSubscription = new aws.lambda.Function('account-table-event-subscription', {
-  runtime: aws.lambda.Go1dxRuntime,
-  code: new pulumi.asset.FileArchive((async () => {
-    await chpExec('GOOS=linux GOARCH=amd64 go build -o ./dist/functions/account-table-subscription/main functions/account-table-subscription/main.go');
-    await chpExec('zip -j ./dist/functions/account-table-subscription/main.zip ./dist/functions/account-table-subscription/main');
-
-    return './dist/functions/account-table-subscription/main.zip';
-  })()),
-  timeout: 10,
-  memorySize: 128,
-  handler: 'main',
-  role: lambdaRole.arn,
-  environment: {
-    variables: {
-      timestamp: new Date().toLocaleString(),
-      accountTableSubscriptionTopicArn: accountTableEventTopic.arn,
-    }
-  },
-  name: `${config.service}-${config.stage}-account-table-event-subscription`
+const accountTableEventSubscription = createLambdaFunction('account-table-event-subscription', {
+  filepath: 'account-table-subscription',
+  role: lambdaRole,
+  handlerName: `${config.service}-${config.stage}-account-table-event-subscription`,
+  lambdaOptions: {
+    environment: {
+      variables: {
+        timestamp: new Date().toLocaleString(),
+        accountTableSubscriptionTopicArn: accountTableEventTopic.arn,
+      }
+    },
+  }
 });
 
 const accountTableSubscription = new aws.dynamodb.TableEventSubscription('account-table-subscription', accountTable, accountTableEventSubscription, {
   startingPosition: 'TRIM_HORIZON'
 });
 
-const handlerAuth = new aws.lambda.Function('handler-auth', {
-  runtime: aws.lambda.Go1dxRuntime,
-  code: new pulumi.asset.FileArchive((async () => {
-    await chpExec('GOOS=linux GOARCH=amd64 go build -o ./dist/functions/authenticate/main functions/authenticate/main.go');
-    await chpExec('zip -j ./dist/functions/authenticate/main.zip ./dist/functions/authenticate/main');
-
-    return './dist/functions/authenticate/main.zip';
-  })()),
-  timeout: 10,
-  memorySize: 128,
-  handler: 'main',
-  role: lambdaRole.arn,
-  environment: {
-    variables: {
-      timestamp: new Date().toLocaleString(),
-      authTable: accountTable.name,
-      jwtPrivate: parameter.jwtPrivate,
-      twitterClientKey: parameter.twitter.client,
-      twitterClientSecret: parameter.twitter.secret,
-    }
-  },
-  name: `${config.service}-${config.stage}-auth`
+const handlerAuth = createLambdaFunction('handler-auth', {
+  filepath: 'authenticate',
+  role: lambdaRole,
+  handlerName: `${config.service}-${config.stage}-auth`,
+  lambdaOptions: {
+    environment: {
+      variables: {
+        timestamp: new Date().toLocaleString(),
+        authTable: accountTable.name,
+        jwtPrivate: parameter.jwtPrivate,
+        twitterClientKey: parameter.twitter.client,
+        twitterClientSecret: parameter.twitter.secret,
+      }
+    },
+  }
 });
 
-const handlerTwitter = new aws.lambda.Function('handler-twitter', {
-  runtime: aws.lambda.Go1dxRuntime,
-  code: new pulumi.asset.FileArchive((async () => {
-    await chpExec('GOOS=linux GOARCH=amd64 go build -o ./dist/functions/twitter/main functions/twitter/main.go');
-    await chpExec('zip -j ./dist/functions/twitter/main.zip ./dist/functions/twitter/main');
-
-    return './dist/functions/twitter/main.zip';
-  })()),
-  timeout: 10,
-  memorySize: 128,
-  handler: 'main',
-  role: lambdaRole.arn,
-  environment: {
-    variables: {
-      timestamp: new Date().toLocaleString(),
-      clientKey: parameter.twitter.client,
-      clientSecret: parameter.twitter.secret,
-    }
-  },
-  name: `${config.service}-${config.stage}-twitter`
+const handlerTwitter = createLambdaFunction('handler-twitter', {
+  filepath: 'twitter',
+  role: lambdaRole,
+  handlerName: `${config.service}-${config.stage}-twitter`,
+  lambdaOptions: {
+    environment: {
+      variables: {
+        timestamp: new Date().toLocaleString(),
+        clientKey: parameter.twitter.client,
+        clientSecret: parameter.twitter.secret,
+      }
+    },
+  }
 });
-
 
 const accountAPI = new aws.apigateway.RestApi('account-api', {
   name: `${config.service}-${config.stage}`

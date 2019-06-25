@@ -26,9 +26,6 @@ var jwtPrivateKey = os.Getenv("jwtPrivate")
 var twitterClientKey = os.Getenv("twitterClientKey")
 var twitterClientSecret = os.Getenv("twitterClientSecret")
 
-// -----------------------
-// Authentication part starts from here
-
 type Input struct {
 	AuthType string      `json:"auth_type"`
 	Data     interface{} `json:"data"`
