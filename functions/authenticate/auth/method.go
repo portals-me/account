@@ -6,7 +6,7 @@ import (
 
 type AuthMethod interface {
 	// Returns idp ID
-	obtainUserID(table dynamo.Table) (string, error)
+	ObtainUserID(table dynamo.Table) (string, error)
 }
 
 // ---------------

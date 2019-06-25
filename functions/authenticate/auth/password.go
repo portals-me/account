@@ -15,7 +15,7 @@ type Password struct {
 	Password string `json:"password"`
 }
 
-func (password Password) obtainUserID(table dynamo.Table) (string, error) {
+func (password Password) ObtainUserID(table dynamo.Table) (string, error) {
 	var record Record
 	if err := table.
 		Get("sort", "name-pass##"+password.UserName).

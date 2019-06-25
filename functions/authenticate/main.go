@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -17,9 +16,7 @@ import (
 
 	"github.com/guregu/dynamo"
 
-	"github.com/gomodule/oauth1/oauth"
-	. "github.com/portals-me/account/functions/authenticate/lib"
-
+	"github.com/portals-me/account/functions/authenticate/auth"
 	"github.com/portals-me/account/lib/jwt"
 	"github.com/portals-me/account/lib/user"
 )
@@ -39,14 +36,14 @@ type Input struct {
 
 // Crate an Auth method from requestBody
 // This function should an instance constructing function
-func createAuthMethod(body string) (AuthMethod, error) {
+func createAuthMethod(body string) (auth.AuthMethod, error) {
 	var input Input
 	if err := json.Unmarshal([]byte(body), &input); err != nil {
 		return nil, errors.Wrap(err, "Unmarshal failed")
 	}
 
 	if input.AuthType == "password" {
-		var password Password
+		var password auth.Password
 
 		data, _ := json.Marshal(input.Data)
 		if err := json.Unmarshal([]byte(data), &password); err != nil {
@@ -55,14 +52,18 @@ func createAuthMethod(body string) (AuthMethod, error) {
 
 		return password, nil
 	} else if input.AuthType == "twitter" {
-		var twitter Twitter
+		var credentials auth.TwitterCredentials
 
 		data, _ := json.Marshal(input.Data)
-		if err := json.Unmarshal([]byte(data), &twitter); err != nil {
+		if err := json.Unmarshal([]byte(data), &credentials); err != nil {
 			return nil, errors.Wrap(err, "Unmarshal twitter failed")
 		}
 
-		return twitter, nil
+		return auth.Twitter{
+			TwitterCredentials: credentials,
+			ClientKey:          twitterClientKey,
+			ClientSecret:       twitterClientSecret,
+		}, nil
 	}
 
 	return nil, errors.New("Unsupported auth_type: " + input.AuthType)
@@ -115,7 +116,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	authTable := db.Table(authTableName)
 
 	// Get Idp ID
-	idpID, err := method.obtainUserID(authTable)
+	idpID, err := method.ObtainUserID(authTable)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}

@@ -12,9 +12,15 @@ import (
 // ----------------------
 // Twitter implementation
 
-type Twitter struct {
+type TwitterCredentials struct {
 	CredentialToken  string `json:"credential_token"`
 	CredentialSecret string `json:"credential_secret"`
+}
+
+type Twitter struct {
+	TwitterCredentials
+	ClientKey    string
+	ClientSecret string
 }
 
 type TwitterUser struct {
@@ -35,13 +41,13 @@ func GetTwitterClient(twitterClientKey string, twitterClientSecret string) *oaut
 	}
 }
 
-func (twitter Twitter) GetTwitterUser(twitterClientKey string, twitterClientSecret string, user *TwitterUser) error {
+func (twitter Twitter) GetTwitterUser(user *TwitterUser) error {
 	cred := oauth.Credentials{
 		Token:  twitter.CredentialToken,
 		Secret: twitter.CredentialSecret,
 	}
 
-	client := GetTwitterClient(twitterClientKey, twitterClientSecret)
+	client := GetTwitterClient(twitter.ClientKey, twitter.ClientSecret)
 	resp, err := client.Get(nil, &cred, "https://api.twitter.com/1.1/account/verify_credentials.json", url.Values{})
 	if err != nil {
 		return err
@@ -56,9 +62,9 @@ func (twitter Twitter) GetTwitterUser(twitterClientKey string, twitterClientSecr
 	return nil
 }
 
-func (twitter Twitter) obtainUserID(twitterClientKey string, twitterClientSecret string, table dynamo.Table) (string, error) {
+func (twitter Twitter) ObtainUserID(table dynamo.Table) (string, error) {
 	var user TwitterUser
-	if err := twitter.GetTwitterUser(twitterClientKey, twitterClientSecret, &user); err != nil {
+	if err := twitter.GetTwitterUser(&user); err != nil {
 		return "", err
 	}
 
