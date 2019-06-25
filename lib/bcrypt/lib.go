@@ -1,4 +1,4 @@
-package lib
+package bcrypt
 
 import (
 	"github.com/pkg/errors"
