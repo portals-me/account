@@ -20,6 +20,7 @@ import (
 	"github.com/gomodule/oauth1/oauth"
 	. "github.com/portals-me/account/functions/authenticate/lib"
 
+	"github.com/portals-me/account/lib/jwt"
 	"github.com/portals-me/account/lib/user"
 )
 
@@ -184,7 +185,7 @@ func createJwt(userInfo user.UserInfo) (string, error) {
 		panic(err)
 	}
 
-	signer := ES256Signer{
+	signer := jwt.ES256Signer{
 		Key: jwtPrivateKey,
 	}
 	token, err := signer.Sign(payload)
