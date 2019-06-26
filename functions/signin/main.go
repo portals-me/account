@@ -16,7 +16,7 @@ import (
 
 	"github.com/guregu/dynamo"
 
-	"github.com/portals-me/account/functions/authenticate/auth"
+	"github.com/portals-me/account/functions/signin/auth"
 	"github.com/portals-me/account/lib/jwt"
 	"github.com/portals-me/account/lib/user"
 )

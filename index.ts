@@ -87,10 +87,10 @@ const accountTableSubscription = new aws.dynamodb.TableEventSubscription('accoun
   startingPosition: 'TRIM_HORIZON'
 });
 
-const handlerAuth = createLambdaFunction('handler-auth', {
-  filepath: 'authenticate',
+const signinLambda = createLambdaFunction('handler-signin', {
+  filepath: 'signin',
   role: lambdaRole,
-  handlerName: `${config.service}-${config.stage}-auth`,
+  handlerName: `${config.service}-${config.stage}-signin`,
   lambdaOptions: {
     environment: {
       variables: {
@@ -104,7 +104,7 @@ const handlerAuth = createLambdaFunction('handler-auth', {
   }
 });
 
-const handlerTwitter = createLambdaFunction('handler-twitter', {
+const twitterLambda = createLambdaFunction('handler-twitter', {
   filepath: 'twitter',
   role: lambdaRole,
   handlerName: `${config.service}-${config.stage}-twitter`,
@@ -123,21 +123,21 @@ const accountAPI = new aws.apigateway.RestApi('account-api', {
   name: `${config.service}-${config.stage}`
 });
 
-const authenticateResource = createCORSResource('authenticate', {
+const signinResource = createCORSResource('signin', {
   parentId: accountAPI.rootResourceId,
-  pathPart: 'authenticate',
+  pathPart: 'signin',
   restApi: accountAPI,
 });
 
-const authenticateLambdaIntegration = createLambdaMethod('authenticate', {
+const signinLambdaIntegration = createLambdaMethod('signin', {
   authorization: 'NONE',
   httpMethod: 'POST',
-  resource: authenticateResource,
+  resource: signinResource,
   restApi: accountAPI,
   integration: {
     type: 'AWS_PROXY',
   },
-  handler: handlerAuth,
+  handler: signinLambda,
 });
 
 const twitterResource = createCORSResource('twitter', {
@@ -154,7 +154,7 @@ const twitterPostIntegration = createLambdaMethod('twitter-post', {
   integration: {
     type: 'AWS_PROXY',
   },
-  handler: handlerTwitter,
+  handler: twitterLambda,
 });
 
 const twitterGetIntegration = createLambdaMethod('twitter-get', {
@@ -165,7 +165,7 @@ const twitterGetIntegration = createLambdaMethod('twitter-get', {
   integration: {
     type: 'AWS_PROXY',
   },
-  handler: handlerTwitter,
+  handler: twitterLambda,
   method: {
     requestParameters: {
       'method.request.querystring.oauth_token': true,
@@ -182,7 +182,7 @@ const accountAPIDeployment = new aws.apigateway.Deployment(
     stageDescription: new Date().toLocaleString(),
   },
   {
-    dependsOn: [authenticateLambdaIntegration, twitterPostIntegration, twitterGetIntegration]
+    dependsOn: [signinLambdaIntegration, twitterPostIntegration, twitterGetIntegration]
   }
 );
 
