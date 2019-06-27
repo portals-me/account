@@ -18,6 +18,7 @@ import (
 
 	"github.com/portals-me/account/functions/signin/auth"
 	"github.com/portals-me/account/lib/jwt"
+	"github.com/portals-me/account/lib/twitter"
 	"github.com/portals-me/account/lib/user"
 )
 
@@ -49,17 +50,19 @@ func createAuthMethod(body string) (auth.AuthMethod, error) {
 
 		return password, nil
 	} else if input.AuthType == "twitter" {
-		var credentials auth.TwitterCredentials
+		var credentials twitter.Credentials
 
 		data, _ := json.Marshal(input.Data)
 		if err := json.Unmarshal([]byte(data), &credentials); err != nil {
 			return nil, errors.Wrap(err, "Unmarshal twitter failed")
 		}
 
-		return auth.Twitter{
-			TwitterCredentials: credentials,
-			ClientKey:          twitterClientKey,
-			ClientSecret:       twitterClientSecret,
+		return auth.TwitterClient{
+			Config: twitter.Config{
+				Credentials:  credentials,
+				ClientKey:    twitterClientKey,
+				ClientSecret: twitterClientSecret,
+			},
 		}, nil
 	}
 
