@@ -14,8 +14,8 @@ type AuthMethod interface {
 	// Returns idp ID
 	ObtainUserID(table dynamo.Table) (string, error)
 
-	// Create a user, returns Idp ID too
-	CreateUser(table dynamo.Table, user user.UserInfo) (string, error)
+	// Create a user
+	CreateUser(table dynamo.Table, user user.UserInfo) error
 }
 
 // ---------------

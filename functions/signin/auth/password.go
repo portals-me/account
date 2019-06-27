@@ -32,6 +32,6 @@ func (password Password) ObtainUserID(table dynamo.Table) (string, error) {
 	return record.ID, nil
 }
 
-func (password Password) CreateUser(table dynamo.Table, user user.UserInfo) (string, error) {
-	return "", errors.New("Not implemented yet")
+func (password Password) CreateUser(table dynamo.Table, user user.UserInfo) error {
+	return errors.New("Not implemented yet")
 }

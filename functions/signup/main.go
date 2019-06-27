@@ -7,14 +7,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/pkg/errors"
-
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/guregu/dynamo"
+	"github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 
 	"github.com/portals-me/account/functions/signin/auth"
 	"github.com/portals-me/account/lib/user"
@@ -85,9 +84,11 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	db := dynamo.NewFromIface(dynamodb.New(sess))
 	authTable := db.Table(authTableName)
 
-	// Get Idp ID
-	idpID, err := method.CreateUser(authTable, userInfo)
-	if err != nil {
+	idpID := uuid.NewV4().String()
+	userInfo.ID = idpID
+
+	// Create a new user
+	if err := method.CreateUser(authTable, userInfo); err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}
 
