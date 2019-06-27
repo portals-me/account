@@ -3,58 +3,23 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"net/url"
 	"os"
-
-	"github.com/gomodule/oauth1/oauth"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/gomodule/oauth1/oauth"
+
+	"github.com/portals-me/account/lib/twitter"
 )
 
 var clientKey = os.Getenv("clientKey")
 var clientSecret = os.Getenv("clientSecret")
 
-type TwitterUser struct {
-	ID              string `json:"id_str"`
-	ScreenName      string `json:"screen_name"`
-	DisplayName     string `json:"name"`
-	ProfileImageURL string `json:"profile_image_url"`
-}
-
-func GetTwitterClient() oauth.Client {
-	return oauth.Client{
-		TemporaryCredentialRequestURI: "https://api.twitter.com/oauth/request_token",
-		ResourceOwnerAuthorizationURI: "https://api.twitter.com/oauth/authorize",
-		TokenRequestURI:               "https://api.twitter.com/oauth/access_token",
-		Credentials: oauth.Credentials{
-			Token:  clientKey,
-			Secret: clientSecret,
-		},
-	}
-}
-
-func GetTwitterUser(cred *oauth.Credentials, user *TwitterUser) error {
-	client := GetTwitterClient()
-
-	resp, err := client.Get(nil, cred, "https://api.twitter.com/1.1/account/verify_credentials.json", url.Values{})
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	err = json.NewDecoder(resp.Body).Decode(user)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Client -> POST /auth/twitter -> reidect to twitter.com -> GET /auth/twitter?access_token
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	client := twitter.GetTwitterClient(clientKey, clientSecret)
+
 	if request.HTTPMethod == "POST" {
-		client := GetTwitterClient()
 		result, err := client.RequestTemporaryCredentials(
 			nil,
 			request.Headers["Referer"]+"/twitter-callback",
@@ -73,7 +38,6 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 			Body: url,
 		}, nil
 	} else if request.HTTPMethod == "GET" {
-		client := GetTwitterClient()
 		tokenCred, _, err := client.RequestToken(nil, &oauth.Credentials{
 			Token:  request.QueryStringParameters["oauth_token"],
 			Secret: "",
@@ -82,8 +46,17 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 			return events.APIGatewayProxyResponse{}, err
 		}
 
-		var account TwitterUser
-		if err := GetTwitterUser(tokenCred, &account); err != nil {
+		client := twitter.Config{
+			Credentials: twitter.Credentials{
+				CredentialToken:  tokenCred.Token,
+				CredentialSecret: tokenCred.Secret,
+			},
+			ClientKey:    clientKey,
+			ClientSecret: clientSecret,
+		}
+
+		var account twitter.User
+		if err := client.GetTwitterUser(&account); err != nil {
 			return events.APIGatewayProxyResponse{}, err
 		}
 		raw, _ := json.Marshal(map[string]interface{}{

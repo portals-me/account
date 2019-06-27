@@ -21,6 +21,7 @@ type Config struct {
 type User struct {
 	ID              string `json:"id_str"`
 	ScreenName      string `json:"screen_name"`
+	DisplayName     string `json:"name"`
 	ProfileImageURL string `json:"profile_image_url"`
 }
 
