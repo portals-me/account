@@ -17,7 +17,6 @@ import (
 	"github.com/guregu/dynamo"
 
 	"github.com/portals-me/account/functions/signin/auth"
-	"github.com/portals-me/account/lib/jwt"
 	"github.com/portals-me/account/lib/user"
 )
 
@@ -27,43 +26,34 @@ var twitterClientKey = os.Getenv("twitterClientKey")
 var twitterClientSecret = os.Getenv("twitterClientSecret")
 
 type Input struct {
-	AuthType string      `json:"auth_type"`
-	Data     interface{} `json:"data"`
+	AuthType string        `json:"auth_type"`
+	Data     interface{}   `json:"data"`
+	User     user.UserInfo `json:"user"`
 }
 
-// Crate an Auth method from requestBody
-// This function should an instance constructing function
-func createAuthMethod(body string) (auth.AuthMethod, error) {
+// Similar to `createAuthMethod` function from signin
+func createAuthMethod(body string) (auth.AuthMethod, user.UserInfo, error) {
 	var input Input
 	if err := json.Unmarshal([]byte(body), &input); err != nil {
-		return nil, errors.Wrap(err, "Unmarshal failed")
+		return nil, user.UserInfo{}, errors.Wrap(err, "Unmarshal failed")
 	}
 
-	if input.AuthType == "password" {
-		var password auth.Password
-
-		data, _ := json.Marshal(input.Data)
-		if err := json.Unmarshal([]byte(data), &password); err != nil {
-			return nil, errors.Wrap(err, "Unmarshal password failed")
-		}
-
-		return password, nil
-	} else if input.AuthType == "twitter" {
+	if input.AuthType == "twitter" {
 		var credentials auth.TwitterCredentials
 
 		data, _ := json.Marshal(input.Data)
 		if err := json.Unmarshal([]byte(data), &credentials); err != nil {
-			return nil, errors.Wrap(err, "Unmarshal twitter failed")
+			return nil, user.UserInfo{}, errors.Wrap(err, "Unmarshal twitter failed")
 		}
 
 		return auth.Twitter{
 			TwitterCredentials: credentials,
 			ClientKey:          twitterClientKey,
 			ClientSecret:       twitterClientSecret,
-		}, nil
+		}, input.User, nil
 	}
 
-	return nil, errors.New("Unsupported auth_type: " + input.AuthType)
+	return nil, user.UserInfo{}, errors.New("Unsupported auth_type: " + input.AuthType)
 }
 
 func tryDecodeBase64(s string) string {
@@ -73,23 +63,6 @@ func tryDecodeBase64(s string) string {
 	}
 
 	return string(decoded)
-}
-
-func createJwt(userInfo user.UserInfo) (string, error) {
-	payload, err := json.Marshal(userInfo)
-	if err != nil {
-		panic(err)
-	}
-
-	signer := jwt.ES256Signer{
-		Key: jwtPrivateKey,
-	}
-	token, err := signer.Sign(payload)
-	if err != nil {
-		return "", errors.Wrap(err, "sign failed")
-	}
-
-	return string(token), nil
 }
 
 /*	POST /authenticate
@@ -102,7 +75,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	body := tryDecodeBase64(request.Body)
 	fmt.Println(body)
 
-	method, err := createAuthMethod(body)
+	method, userInfo, err := createAuthMethod(body)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}
@@ -113,7 +86,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	authTable := db.Table(authTableName)
 
 	// Get Idp ID
-	idpID, err := method.ObtainUserID(authTable)
+	idpID, err := method.CreateUser(authTable, userInfo)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}
@@ -128,7 +101,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	}
 
 	// Create JWT
-	jwt, err := createJwt(record.UserInfo)
+	jwt, err := auth.CreateJwt(jwtPrivateKey, record.UserInfo)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}

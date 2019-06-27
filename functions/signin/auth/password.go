@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/portals-me/account/lib/bcrypt"
+	"github.com/portals-me/account/lib/user"
 )
 
 // ----------------
@@ -29,4 +30,8 @@ func (password Password) ObtainUserID(table dynamo.Table) (string, error) {
 	}
 
 	return record.ID, nil
+}
+
+func (password Password) CreateUser(table dynamo.Table, user user.UserInfo) (string, error) {
+	return "", errors.New("Not implemented yet")
 }

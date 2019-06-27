@@ -65,6 +65,10 @@ const accountTable = new aws.dynamodb.Table("account-table", {
     {
       name: "sort",
       type: "S"
+    },
+    {
+      name: "name",
+      type: "S"
     }
   ],
   hashKey: "id",
@@ -76,6 +80,11 @@ const accountTable = new aws.dynamodb.Table("account-table", {
       hashKey: "sort",
       rangeKey: "id",
       projectionType: "ALL"
+    },
+    {
+      name: "name",
+      hashKey: "name",
+      projectionType: "KEYS_ONLY"
     }
   ],
   streamEnabled: true,
@@ -163,6 +172,36 @@ const signinLambdaIntegration = createLambdaMethod("signin", {
   })
 });
 
+const signupLambdaIntegration = createLambdaMethod("signup", {
+  authorization: "NONE",
+  httpMethod: "POST",
+  resource: createCORSResource("signup", {
+    parentId: accountAPI.rootResourceId,
+    pathPart: "signup",
+    restApi: accountAPI
+  }),
+  restApi: accountAPI,
+  integration: {
+    type: "AWS_PROXY"
+  },
+  handler: createLambdaFunction("handler-signup", {
+    filepath: "signup",
+    role: lambdaRole,
+    handlerName: `${config.service}-${config.stage}-signup`,
+    lambdaOptions: {
+      environment: {
+        variables: {
+          timestamp: new Date().toLocaleString(),
+          authTable: accountTable.name,
+          jwtPrivate: parameter.jwtPrivate,
+          twitterClientKey: parameter.twitter.client,
+          twitterClientSecret: parameter.twitter.secret
+        }
+      }
+    }
+  })
+});
+
 const twitterResource = createCORSResource("twitter", {
   parentId: accountAPI.rootResourceId,
   pathPart: "twitter",
@@ -206,6 +245,7 @@ const accountAPIDeployment = new aws.apigateway.Deployment(
   },
   {
     dependsOn: [
+      //      signupLambdaIntegration,
       signinLambdaIntegration,
       twitterPostIntegration,
       twitterGetIntegration

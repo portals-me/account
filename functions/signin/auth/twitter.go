@@ -7,6 +7,9 @@ import (
 
 	"github.com/gomodule/oauth1/oauth"
 	"github.com/guregu/dynamo"
+	"github.com/satori/go.uuid"
+
+	"github.com/portals-me/account/lib/user"
 )
 
 // ----------------------
@@ -77,4 +80,55 @@ func (twitter Twitter) ObtainUserID(table dynamo.Table) (string, error) {
 	}
 
 	return record.ID, nil
+}
+
+func (twitter Twitter) CreateUser(table dynamo.Table, user user.UserInfo) (string, error) {
+	var twitterUser TwitterUser
+	if err := twitter.GetTwitterUser(&twitterUser); err != nil {
+		return "", err
+	}
+
+	// Check if the account already exists
+	var records []Record
+	if err := table.
+		Get("sort", "twitter##"+twitterUser.ID).
+		Index("auth").
+		All(&records); err != nil {
+		return "", err
+	}
+
+	if len(records) != 0 {
+		return "", errors.New("The account already exists")
+	}
+
+	// Check if the name is unique
+	var selectName []interface{}
+	if err := table.
+		Get("name", user.Name).
+		Index("name").
+		All(&selectName); err != nil {
+		return "", err
+	}
+
+	if len(selectName) != 0 {
+		return "", errors.New("Name already exists")
+	}
+
+	idpID := uuid.NewV4().String()
+
+	if err := table.
+		Put(map[string]interface{}{
+			"id":   idpID,
+			"sort": "twitter##" + twitterUser.ID,
+		}).
+		If("attribute_not_exists(id)").
+		Run(); err != nil {
+		return "", err
+	}
+
+	if err := table.Put(user.ToDDB()).Run(); err != nil {
+		return "", err
+	}
+
+	return idpID, nil
 }

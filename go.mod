@@ -10,5 +10,6 @@ require (
 	github.com/gomodule/oauth1 v0.0.0-20181215000758-9a59ed3b0a84
 	github.com/guregu/dynamo v1.2.1
 	github.com/pkg/errors v0.8.1
+	github.com/satori/go.uuid v1.2.0
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 )
