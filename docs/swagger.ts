@@ -56,7 +56,8 @@ swagger.addPath(
   "/signin",
   "post",
   new devkit.Path({
-    summary: "SignIn with existing account"
+    summary: "SignIn with existing account",
+    tags: ["auth"]
   })
     .addRequestBody(
       new devkit.RequestBody().addContent("application/json", SignInInput)
@@ -100,7 +101,8 @@ swagger.addPath(
   "/signup",
   "post",
   new devkit.Path({
-    summary: "SignUp with user data"
+    summary: "SignUp with user data",
+    tags: ["auth"]
   })
     .addRequestBody(
       new devkit.RequestBody().addContent("application/json", SignUpInput)
@@ -123,7 +125,8 @@ swagger.addPath(
   "post",
   new devkit.Path({
     summary: "URL for Twitter callback",
-    description: "This URL should be used for Twitter callback"
+    description: "This URL should be used for Twitter callback",
+    tags: ["twitter"]
   }).addResponse(
     "200",
     new devkit.Response({
@@ -142,7 +145,8 @@ swagger.addPath(
   "/twitter",
   "get",
   new devkit.Path({
-    summary: "Get Twitter credentials"
+    summary: "Get Twitter credentials",
+    tags: ["twitter"]
   }).addResponse(
     "200",
     new devkit.Response({

@@ -3,6 +3,8 @@ paths:
   /signin:
     post:
       summary: SignIn with existing account
+      tags:
+        - auth
       requestBody:
         content:
           application/json:
@@ -19,6 +21,8 @@ paths:
   /signup:
     post:
       summary: SignUp with user data
+      tags:
+        - auth
       requestBody:
         content:
           application/json:
@@ -36,6 +40,8 @@ paths:
     post:
       summary: URL for Twitter callback
       description: This URL should be used for Twitter callback
+      tags:
+        - twitter
       responses:
         '200':
           description: Returns redirect URL
@@ -47,6 +53,8 @@ paths:
                 description: URL for redirection
     get:
       summary: Get Twitter credentials
+      tags:
+        - twitter
       responses:
         '200':
           description: Returns Twitter credentials and account information
