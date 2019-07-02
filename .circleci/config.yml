@@ -10,8 +10,8 @@ jobs:
       - image: myuon/portals-me-account-ci:latest
     steps:
       - checkout
-      - npm i -g yarn
-      - yarn
+      - run: npm i -g yarn
+      - run: yarn
       - persist_to_workspace:
           root: .
           paths:
@@ -23,9 +23,9 @@ jobs:
       - attach_workspace:
           at: .
       - aws-cli/install
-      - curl -fsSL https://get.pulumi.com | sh
-      - pulumi stack select stg
-      - pulumi up -y
+      - run: curl -fsSL https://get.pulumi.com | sh
+      - run: pulumi stack select stg
+      - run: pulumi up -y
 
 workflows:
   version: 2
