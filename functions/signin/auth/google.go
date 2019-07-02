@@ -24,7 +24,7 @@ func (client GoogleClient) ObtainUserID(table dynamo.Table) (string, error) {
 		Get("sort", "google##"+user.Sub).
 		Index("auth").
 		One(&record); err != nil {
-		return "", errors.New("Twitter user not found: " + user.Sub)
+		return "", errors.New("Google user not found: " + user.Sub)
 	}
 
 	return record.ID, nil

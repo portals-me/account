@@ -31,6 +31,14 @@ const parameter = {
         withDecryption: true
       })
       .then(result => result.value)
+  },
+  google: {
+    clientId: aws.ssm
+      .getParameter({
+        name: `${config.service}-google-clientId`,
+        withDecryption: true
+      })
+      .then(result => result.value)
   }
 };
 
@@ -165,7 +173,8 @@ const signinLambdaIntegration = createLambdaMethod("signin", {
           authTable: accountTable.name,
           jwtPrivate: parameter.jwtPrivate,
           twitterClientKey: parameter.twitter.client,
-          twitterClientSecret: parameter.twitter.secret
+          twitterClientSecret: parameter.twitter.secret,
+          googleClinetId: parameter.google.clientId
         }
       }
     }
@@ -195,7 +204,8 @@ const signupLambdaIntegration = createLambdaMethod("signup", {
           authTable: accountTable.name,
           jwtPrivate: parameter.jwtPrivate,
           twitterClientKey: parameter.twitter.client,
-          twitterClientSecret: parameter.twitter.secret
+          twitterClientSecret: parameter.twitter.secret,
+          googleClinetId: parameter.google.clientId
         }
       }
     }
