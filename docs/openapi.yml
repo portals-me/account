@@ -1,0 +1,168 @@
+openapi: 3.0.0
+paths:
+  /signin:
+    post:
+      summary: SignIn with existing account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInInput'
+      responses:
+        '200':
+          description: JWT Successfully created
+          content:
+            application/json:
+              schema:
+                type: string
+                description: JWT created by portals-me.com
+  /signup:
+    post:
+      summary: SignUp with user data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpInput'
+      responses:
+        '200':
+          description: JWT Successfully created
+          content:
+            application/json:
+              schema:
+                type: string
+                description: JWT created by portals-me.com
+  /twitter:
+    post:
+      summary: URL for Twitter callback
+      description: This URL should be used for Twitter callback
+      responses:
+        '200':
+          description: Returns redirect URL
+          content:
+            application/json:
+              schema:
+                type: string
+                format: url
+                description: URL for redirection
+    get:
+      summary: Get Twitter credentials
+      responses:
+        '200':
+          description: Returns Twitter credentials and account information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credential_token:
+                    type: string
+                  credential_secret:
+                    type: string
+                  account:
+                    type: object
+                    properties:
+                      id_str:
+                        type: string
+                      screen_name:
+                        type: string
+                      name:
+                        type: string
+                        description: display_name
+                      profile_image_url:
+                        type: string
+                        format: url
+                    description: Twitter user information
+info:
+  title: portals@me Account service API Spec
+  version: 1.0.0
+components:
+  schemas:
+    SignInInput:
+      type: object
+      properties:
+        auth_type:
+          enum:
+            - password
+            - twitter
+            - google
+          type: string
+        data:
+          oneOf:
+            - type: object
+              properties:
+                user_name:
+                  type: string
+                password:
+                  type: string
+              description: Valid when auth_type is `password`
+            - type: object
+              properties:
+                credential_token:
+                  type: string
+                credential_secret:
+                  type: string
+              description: Valid when auth_type is `twitter`
+            - type: object
+              properties:
+                token:
+                  type: string
+                  description: Google id token
+              description: Valid when auth_type is `google`
+        user:
+          type: object
+          properties:
+            name:
+              type: string
+              description: 'So called `screen_name`, this must be unique among all users'
+            picture:
+              type: string
+              format: url
+              description: URL for the avatar image
+            display_name:
+              type: string
+              description: The name for profile
+    SignUpInput:
+      type: object
+      properties:
+        auth_type:
+          enum:
+            - password
+            - twitter
+            - google
+          type: string
+        data:
+          oneOf:
+            - type: object
+              properties:
+                user_name:
+                  type: string
+                password:
+                  type: string
+              description: Valid when auth_type is `password`
+            - type: object
+              properties:
+                credential_token:
+                  type: string
+                credential_secret:
+                  type: string
+              description: Valid when auth_type is `twitter`
+            - type: object
+              properties:
+                token:
+                  type: string
+                  description: Google id token
+              description: Valid when auth_type is `google`
+        user:
+          type: object
+          properties:
+            name:
+              type: string
+              description: 'So called `screen_name`, this must be unique among all users'
+            picture:
+              type: string
+              format: url
+              description: URL for the avatar image
+            display_name:
+              type: string
+              description: The name for profile
