@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  aws-cli: circleci/aws-cli@0.1.13
+  pulumi: pulumi/pulumi@1.0.0
 
 jobs:
   build:
@@ -18,14 +18,14 @@ jobs:
             - .
   deploy:
     working_directory: ~/workspace
-    executor: aws-cli/default
+    docker:
+      - image: myuon/portals-me-account-ci:latest
     steps:
       - attach_workspace:
           at: .
-      - aws-cli/install
-      - run: curl -fsSL https://get.pulumi.com | sh
-      - run: ~/.pulumi/bin/pulumi stack select stg
-      - run: ~/.pulumi/bin/pulumi up -y
+      - pulumi/login
+      - pulumi/update:
+          stack: myuon/portals-me-account/stg
 
 workflows:
   version: 2
