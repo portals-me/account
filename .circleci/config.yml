@@ -24,8 +24,8 @@ jobs:
           at: .
       - aws-cli/install
       - run: curl -fsSL https://get.pulumi.com | sh
-      - run: pulumi stack select stg
-      - run: pulumi up -y
+      - run: ~/.pulumi/bin/pulumi stack select stg
+      - run: ~/.pulumi/bin/pulumi up -y
 
 workflows:
   version: 2
