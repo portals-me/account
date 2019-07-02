@@ -174,7 +174,7 @@ const signinLambdaIntegration = createLambdaMethod("signin", {
           jwtPrivate: parameter.jwtPrivate,
           twitterClientKey: parameter.twitter.client,
           twitterClientSecret: parameter.twitter.secret,
-          googleClinetId: parameter.google.clientId
+          googleClientId: parameter.google.clientId
         }
       }
     }
@@ -205,7 +205,7 @@ const signupLambdaIntegration = createLambdaMethod("signup", {
           jwtPrivate: parameter.jwtPrivate,
           twitterClientKey: parameter.twitter.client,
           twitterClientSecret: parameter.twitter.secret,
-          googleClinetId: parameter.google.clientId
+          googleClientId: parameter.google.clientId
         }
       }
     }
