@@ -17,6 +17,7 @@ import (
 	"github.com/guregu/dynamo"
 
 	"github.com/portals-me/account/functions/signin/auth"
+	"github.com/portals-me/account/lib/google"
 	"github.com/portals-me/account/lib/jwt"
 	"github.com/portals-me/account/lib/twitter"
 	"github.com/portals-me/account/lib/user"
@@ -26,6 +27,7 @@ var authTableName = os.Getenv("authTable")
 var jwtPrivateKey = os.Getenv("jwtPrivate")
 var twitterClientKey = os.Getenv("twitterClientKey")
 var twitterClientSecret = os.Getenv("twitterClientSecret")
+var googleClientId = os.Getenv("googleClientId")
 
 type Input struct {
 	AuthType string      `json:"auth_type"`
@@ -62,6 +64,20 @@ func createAuthMethod(body string) (auth.AuthMethod, error) {
 				Credentials:  credentials,
 				ClientKey:    twitterClientKey,
 				ClientSecret: twitterClientSecret,
+			},
+		}, nil
+	} else if input.AuthType == "google" {
+		var client google.Token
+
+		data, _ := json.Marshal(input.Data)
+		if err := json.Unmarshal([]byte(data), &client); err != nil {
+			return nil, errors.Wrap(err, "Unmarshal google failed")
+		}
+
+		return auth.GoogleClient{
+			Config: google.Config{
+				Token:    client,
+				ClientId: googleClientId,
 			},
 		}, nil
 	}

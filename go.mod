@@ -3,6 +3,7 @@ module github.com/portals-me/account
 go 1.12
 
 require (
+	github.com/GoogleIdTokenVerifier/GoogleIdTokenVerifier v0.0.0-20161220031521-f9aca297807f
 	github.com/aws/aws-lambda-go v1.11.1
 	github.com/aws/aws-sdk-go v1.19.49
 	github.com/gbrlsnchs/jwt/v2 v2.0.0
