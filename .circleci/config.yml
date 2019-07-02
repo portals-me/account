@@ -23,9 +23,8 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - pulumi/login
-      - pulumi/update:
-          stack: myuon/portals-me-account/stg
+      - run: pulumi stack select myuon/portals-me-account/stg
+      - run: pulumi up -y
 
 workflows:
   version: 2
