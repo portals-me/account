@@ -120,23 +120,6 @@ swagger.addPath(
     )
 );
 
-const userSchema = {
-  id: devkit.Schema.string({
-    format: "uuid"
-  }),
-  name: devkit.Schema.string(),
-  picture: devkit.Schema.string({
-    format: "url"
-  }),
-  display_name: devkit.Schema.string()
-};
-
-const User = new devkit.Component(
-  swagger,
-  "User",
-  devkit.Schema.object(userSchema)
-);
-
 swagger.addPath(
   "/username/{name}",
   "get",
@@ -155,7 +138,15 @@ swagger.addPath(
     "200",
     new devkit.Response({
       description: "Returns User record"
-    }).addContent("application/json", User)
+    }).addContent(
+      "application/json",
+      devkit.Schema.object({
+        id: devkit.Schema.string({
+          format: "uuid"
+        }),
+        name: devkit.Schema.string()
+      })
+    )
   )
 );
 
