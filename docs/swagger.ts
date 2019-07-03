@@ -3,7 +3,7 @@ import * as devkit from "swagger-devkit";
 const swagger = new devkit.Swagger();
 
 swagger.addInfo({
-  title: "portals@me Account service API Spec",
+  title: "Account Service API Spec",
   version: "1.0.0"
 });
 
@@ -118,6 +118,45 @@ swagger.addPath(
         })
       )
     )
+);
+
+const userSchema = {
+  id: devkit.Schema.string({
+    format: "uuid"
+  }),
+  name: devkit.Schema.string(),
+  picture: devkit.Schema.string({
+    format: "url"
+  }),
+  display_name: devkit.Schema.string()
+};
+
+const User = new devkit.Component(
+  swagger,
+  "User",
+  devkit.Schema.object(userSchema)
+);
+
+swagger.addPath(
+  "/username/{name}",
+  "get",
+  new devkit.Path({
+    summary: "Get the user by name",
+    tags: ["auth"],
+    parameters: [
+      {
+        in: "path",
+        required: true,
+        name: "name",
+        schema: devkit.Schema.string()
+      }
+    ]
+  }).addResponse(
+    "200",
+    new devkit.Response({
+      description: "Returns User record"
+    }).addContent("application/json", User)
+  )
 );
 
 swagger.addPath(

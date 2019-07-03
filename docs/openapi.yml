@@ -9,9 +9,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SignInInput'
+              $ref: "#/components/schemas/SignInInput"
       responses:
-        '200':
+        "200":
           description: JWT Successfully created
           content:
             application/json:
@@ -27,15 +27,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SignUpInput'
+              $ref: "#/components/schemas/SignUpInput"
       responses:
-        '200':
+        "200":
           description: JWT Successfully created
           content:
             application/json:
               schema:
                 type: string
                 description: JWT created by portals-me.com
+  "/username/{name}":
+    get:
+      summary: Get the user by name
+      tags:
+        - auth
+      parameters:
+        - in: path
+          required: true
+          name: name
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Returns User record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
   /twitter:
     post:
       summary: URL for Twitter callback
@@ -43,7 +61,7 @@ paths:
       tags:
         - twitter
       responses:
-        '200':
+        "200":
           description: Returns redirect URL
           content:
             application/json:
@@ -56,7 +74,7 @@ paths:
       tags:
         - twitter
       responses:
-        '200':
+        "200":
           description: Returns Twitter credentials and account information
           content:
             application/json:
@@ -82,7 +100,7 @@ paths:
                         format: url
                     description: Twitter user information
 info:
-  title: portals@me Account service API Spec
+  title: Account Service API Spec
   version: 1.0.0
 components:
   schemas:
@@ -122,7 +140,7 @@ components:
           properties:
             name:
               type: string
-              description: 'So called `screen_name`, this must be unique among all users'
+              description: "So called `screen_name`, this must be unique among all users"
             picture:
               type: string
               format: url
@@ -166,7 +184,7 @@ components:
           properties:
             name:
               type: string
-              description: 'So called `screen_name`, this must be unique among all users'
+              description: "So called `screen_name`, this must be unique among all users"
             picture:
               type: string
               format: url
@@ -174,3 +192,16 @@ components:
             display_name:
               type: string
               description: The name for profile
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        picture:
+          type: string
+          format: url
+        display_name:
+          type: string
