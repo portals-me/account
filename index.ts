@@ -246,6 +246,46 @@ const twitterGetIntegration = createLambdaMethod("twitter-get", {
   }
 });
 
+const getUserByName = createLambdaFunction("get-user-by-name-function", {
+  filepath: "get-user-by-name",
+  role: lambdaRole,
+  handlerName: `${config.service}-${config.stage}-get-user-by-name`,
+  lambdaOptions: {
+    environment: {
+      variables: {
+        timestamp: new Date().toLocaleString(),
+        authTable: accountTable.name
+      }
+    }
+  }
+});
+
+const usernameResource = new aws.apigateway.Resource("username", {
+  parentId: accountAPI.rootResourceId,
+  pathPart: "username",
+  restApi: accountAPI
+});
+
+const nameResource = createCORSResource("name", {
+  parentId: usernameResource.id,
+  pathPart: "{name}",
+  restApi: accountAPI
+});
+
+const getUserByNameIntegration = createLambdaMethod(
+  "get-user-by-name-integration",
+  {
+    authorization: "NONE",
+    httpMethod: "GET",
+    resource: nameResource,
+    restApi: accountAPI,
+    integration: {
+      type: "AWS_PROXY"
+    },
+    handler: getUserByName
+  }
+);
+
 const accountAPIDeployment = new aws.apigateway.Deployment(
   "account-api-deployment",
   {
@@ -255,10 +295,11 @@ const accountAPIDeployment = new aws.apigateway.Deployment(
   },
   {
     dependsOn: [
-      //      signupLambdaIntegration,
+      signupLambdaIntegration,
       signinLambdaIntegration,
       twitterPostIntegration,
-      twitterGetIntegration
+      twitterGetIntegration,
+      getUserByNameIntegration
     ]
   }
 );
