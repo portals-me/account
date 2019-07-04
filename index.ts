@@ -14,7 +14,9 @@ const config = {
 const parameter = {
   jwtPrivate: aws.ssm
     .getParameter({
-      name: `${config.service}-${config.stage}-jwt-private`,
+      name: config.stage.startsWith("test")
+        ? `${config.service}-stg-jwt-private`
+        : `${config.service}-${config.service}-jwt-private`,
       withDecryption: true
     })
     .then(result => result.value),
@@ -305,5 +307,5 @@ const accountAPIDeployment = new aws.apigateway.Deployment(
 );
 
 export const output = {
-  endpoint: accountAPIDeployment.invokeUrl
+  restApi: accountAPIDeployment.invokeUrl
 };
