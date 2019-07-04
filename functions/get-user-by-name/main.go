@@ -30,6 +30,16 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		Get("name", request.PathParameters["name"]).
 		Index("name").
 		One(&record); err != nil {
+		if err == dynamo.ErrNotFound {
+			return events.APIGatewayProxyResponse{
+				Body: "User not found",
+				Headers: map[string]string{
+					"Access-Control-Allow-Origin": "*",
+				},
+				StatusCode: 404,
+			}, nil
+		}
+
 		return events.APIGatewayProxyResponse{}, err
 	}
 
