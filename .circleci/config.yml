@@ -51,6 +51,7 @@ workflows:
       - test:
           requires:
             - install
+          context: aws
       - deploy:
           filters:
             branches:
