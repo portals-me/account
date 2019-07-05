@@ -7,6 +7,22 @@ swagger.addInfo({
   version: "1.0.0"
 });
 
+const userSchema = {
+  id: devkit.Schema.string({
+    format: "uuid"
+  }),
+  name: devkit.Schema.string({
+    description: "So called `screen_name`, this must be unique among all users"
+  }),
+  picture: devkit.Schema.string({
+    format: "url",
+    description: "URL for the avatar image"
+  }),
+  display_name: devkit.Schema.string({
+    description: "The name for profile"
+  })
+};
+
 const authSchema = {
   auth_type: {
     enum: ["password", "twitter", "google"],
@@ -49,7 +65,10 @@ const authSchema = {
 const SignInInput = new devkit.Component(
   swagger,
   "SignInInput",
-  devkit.Schema.object(authSchema)
+  devkit.Schema.object({
+    auth_type: authSchema.auth_type,
+    data: authSchema.data
+  })
 );
 
 swagger.addPath(
@@ -75,26 +94,16 @@ swagger.addPath(
     )
 );
 
+const { id, ...SignUpInputUser } = userSchema;
 const SignUpInput = new devkit.Component(
   swagger,
   "SignUpInput",
-  devkit.Schema.object(
-    Object.assign(authSchema, {
-      user: devkit.Schema.object({
-        name: devkit.Schema.string({
-          description:
-            "So called `screen_name`, this must be unique among all users"
-        }),
-        picture: devkit.Schema.string({
-          format: "url",
-          description: "URL for the avatar image"
-        }),
-        display_name: devkit.Schema.string({
-          description: "The name for profile"
-        })
-      })
-    })
-  )
+  devkit.Schema.object({
+    user: devkit.Schema.object({
+      ...SignUpInputUser
+    }),
+    ...authSchema
+  })
 );
 
 swagger.addPath(
@@ -147,6 +156,37 @@ swagger.addPath(
         name: devkit.Schema.string()
       })
     )
+  )
+);
+
+const User = new devkit.Component(
+  swagger,
+  "User",
+  devkit.Schema.object({
+    ...userSchema
+  })
+);
+swagger.addPath(
+  "/users/{userId}",
+  "get",
+  new devkit.Path({
+    summary: "Get the user by id",
+    tags: ["auth"],
+    parameters: [
+      {
+        in: "path",
+        required: true,
+        name: "userId",
+        schema: devkit.Schema.string({
+          format: "uuid"
+        })
+      }
+    ]
+  }).addResponse(
+    "200",
+    new devkit.Response({
+      description: "Returns User record"
+    }).addContent("application/json", User)
   )
 );
 

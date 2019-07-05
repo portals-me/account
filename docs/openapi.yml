@@ -60,6 +60,25 @@ paths:
                     format: uuid
                   name:
                     type: string
+  "/users/{userId}":
+    get:
+      summary: Get the user by id
+      tags:
+        - auth
+      parameters:
+        - in: path
+          required: true
+          name: userId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Returns User record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
   /twitter:
     post:
       summary: URL for Twitter callback
@@ -141,6 +160,9 @@ components:
                   type: string
                   description: Google id token
               description: Valid when auth_type is `google`
+    SignUpInput:
+      type: object
+      properties:
         user:
           type: object
           properties:
@@ -154,9 +176,6 @@ components:
             display_name:
               type: string
               description: The name for profile
-    SignUpInput:
-      type: object
-      properties:
         auth_type:
           enum:
             - password
@@ -185,16 +204,19 @@ components:
                   type: string
                   description: Google id token
               description: Valid when auth_type is `google`
-        user:
-          type: object
-          properties:
-            name:
-              type: string
-              description: "So called `screen_name`, this must be unique among all users"
-            picture:
-              type: string
-              format: url
-              description: URL for the avatar image
-            display_name:
-              type: string
-              description: The name for profile
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: "So called `screen_name`, this must be unique among all users"
+        picture:
+          type: string
+          format: url
+          description: URL for the avatar image
+        display_name:
+          type: string
+          description: The name for profile
