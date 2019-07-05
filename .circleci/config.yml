@@ -4,7 +4,7 @@ orbs:
   pulumi: pulumi/pulumi@1.0.0
 
 jobs:
-  build:
+  install:
     working_directory: ~/workspace
     docker:
       - image: myuon/portals-me-account-ci:latest
@@ -16,6 +16,22 @@ jobs:
           root: .
           paths:
             - .
+  test:
+    working_directory: ~/workspace
+    docker:
+      - image: myuon/portals-me-account-ci:latest
+    steps:
+      - attach_workspace:
+          at: .
+      - run: export STACK_NAME=myuon/portals-me-account/$(date +%s)
+      - run: pulumi stack init ${STACK_NAME}
+      - run: pulumi stack select ${STACK_NAME}
+      - run: pulumi config set aws:region ap-northeast-1
+      - run: pulumi up -y
+      - run: ENV=$(pulumi stack output output) yarn test
+      - run: export BUILD_STATUS="$?"
+      - run: pulumi destroy -y && pulumi stack rm -y
+      - run: exit ${BUILD_STATUS}
   deploy:
     working_directory: ~/workspace
     docker:
@@ -31,11 +47,15 @@ workflows:
   version: 2
   deploy:
     jobs:
-      - build:
+      - install
+      - test:
+          requires:
+            - install
+      - deploy:
           filters:
             branches:
               only: master
-      - deploy:
           requires:
-            - build
+            - install
+            - test
           context: aws
