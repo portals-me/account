@@ -166,6 +166,7 @@ const User = new devkit.Component(
     ...userSchema
   })
 );
+
 swagger.addPath(
   "/users/{userId}",
   "get",
@@ -188,6 +189,39 @@ swagger.addPath(
       description: "Returns User record"
     }).addContent("application/json", User)
   )
+);
+
+swagger.addPath(
+  "/users/{userId}",
+  "put",
+  new devkit.Path({
+    summary: "Update the user",
+    tags: ["auth"],
+    parameters: [
+      {
+        in: "path",
+        required: true,
+        name: "userId",
+        schema: devkit.Schema.string({
+          format: "uuid"
+        })
+      }
+    ]
+  })
+    .addRequestBody(
+      new devkit.RequestBody().addContent(
+        "application/json",
+        devkit.Schema.object({
+          ...SignUpInputUser
+        })
+      )
+    )
+    .addResponse(
+      "204",
+      new devkit.Response({
+        description: "No Content"
+      })
+    )
 );
 
 swagger.addPath(

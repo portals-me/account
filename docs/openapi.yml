@@ -79,6 +79,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+    put:
+      summary: Update the user
+      tags:
+        - auth
+      parameters:
+        - in: path
+          required: true
+          name: userId
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: "So called `screen_name`, this must be unique among all users"
+                picture:
+                  type: string
+                  format: url
+                  description: URL for the avatar image
+                display_name:
+                  type: string
+                  description: The name for profile
+      responses:
+        "204":
+          description: No Content
   /twitter:
     post:
       summary: URL for Twitter callback
