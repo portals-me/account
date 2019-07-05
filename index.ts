@@ -307,5 +307,6 @@ const accountAPIDeployment = new aws.apigateway.Deployment(
 );
 
 export const output = {
-  restApi: accountAPIDeployment.invokeUrl
+  restApi: accountAPIDeployment.invokeUrl,
+  tableName: accountTable.name
 };
