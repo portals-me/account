@@ -14,7 +14,9 @@ const config = {
 const parameter = {
   jwtPrivate: aws.ssm
     .getParameter({
-      name: `${config.service}-${config.stage}-jwt-private`,
+      name: config.stage.startsWith("test")
+        ? `${config.service}-stg-jwt-private`
+        : `${config.service}-${config.stage}-jwt-private`,
       withDecryption: true
     })
     .then(result => result.value),
@@ -57,7 +59,8 @@ const lambdaRole = new aws.iam.Role("auth-lambda-role", {
         }
       ]
     })
-    .then(result => result.json)
+    .then(result => result.json),
+  name: `${config.service}-${config.stage}-lambda-role`
 });
 new aws.iam.RolePolicyAttachment("auth-lambda-role-lambdafull", {
   role: lambdaRole,
@@ -96,7 +99,8 @@ const accountTable = new aws.dynamodb.Table("account-table", {
     }
   ],
   streamEnabled: true,
-  streamViewType: "NEW_IMAGE"
+  streamViewType: "NEW_IMAGE",
+  name: `${config.service}-${config.stage}-accounts`
 });
 
 const accountTableEventTopic = new aws.sns.Topic("account-table-event-topic", {
@@ -110,7 +114,7 @@ const accountTableEventSubscription = createLambdaFunction(
     role: lambdaRole,
     handlerName: `${config.service}-${
       config.stage
-    }-account-table-event-subscription`,
+    }-account-table-event-subscription`.substr(0, 63),
     lambdaOptions: {
       environment: {
         variables: {
@@ -305,5 +309,6 @@ const accountAPIDeployment = new aws.apigateway.Deployment(
 );
 
 export const output = {
-  endpoint: accountAPIDeployment.invokeUrl
+  restApi: accountAPIDeployment.invokeUrl,
+  tableName: accountTable.name
 };
