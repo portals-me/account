@@ -114,7 +114,7 @@ const accountTableEventSubscription = createLambdaFunction(
     role: lambdaRole,
     handlerName: `${config.service}-${
       config.stage
-    }-account-table-event-subscription`,
+    }-account-table-event-subscription`.substr(0, 63),
     lambdaOptions: {
       environment: {
         variables: {
