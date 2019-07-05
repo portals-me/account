@@ -24,7 +24,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: |
-          export STACK_NAME=myuon/portals-me-account/$(date +%s)
+          export STACK_NAME=test-$(date +%s)
 
           pulumi stack init ${STACK_NAME}
           pulumi stack select ${STACK_NAME}
