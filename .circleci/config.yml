@@ -39,7 +39,7 @@ jobs:
             echo "*** Test Succeeded ***"
           }
 
-          { pulumi destroy -y ; pulumi stack rm -y } && exit ${BUILD_STATUS}
+          ( pulumi destroy -y ; pulumi stack rm -y ) && exit ${BUILD_STATUS}
   deploy:
     working_directory: ~/workspace
     docker:
