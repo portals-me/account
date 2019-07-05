@@ -16,7 +16,7 @@ const parameter = {
     .getParameter({
       name: config.stage.startsWith("test")
         ? `${config.service}-stg-jwt-private`
-        : `${config.service}-${config.service}-jwt-private`,
+        : `${config.service}-${config.stage}-jwt-private`,
       withDecryption: true
     })
     .then(result => result.value),
@@ -59,7 +59,8 @@ const lambdaRole = new aws.iam.Role("auth-lambda-role", {
         }
       ]
     })
-    .then(result => result.json)
+    .then(result => result.json),
+  name: `${config.service}-${config.stage}-lambda-role`
 });
 new aws.iam.RolePolicyAttachment("auth-lambda-role-lambdafull", {
   role: lambdaRole,
@@ -98,7 +99,8 @@ const accountTable = new aws.dynamodb.Table("account-table", {
     }
   ],
   streamEnabled: true,
-  streamViewType: "NEW_IMAGE"
+  streamViewType: "NEW_IMAGE",
+  name: `${config.service}-${config.stage}-accounts`
 });
 
 const accountTableEventTopic = new aws.sns.Topic("account-table-event-topic", {

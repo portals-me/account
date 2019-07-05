@@ -53,4 +53,10 @@ describe("Account", () => {
     });
     expect(result.data).toBeTruthy();
   });
+
+  it("should get the user id by name", async () => {
+    const result = await axios.get(`${env.restApi}/username/${user.name}`);
+    expect(result.data.id).toEqual(user.id);
+    expect(result.data.name).toEqual(user.name);
+  });
 });
