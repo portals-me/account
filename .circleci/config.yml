@@ -29,11 +29,17 @@ jobs:
           pulumi stack init ${STACK_NAME}
           pulumi stack select ${STACK_NAME}
           pulumi config set aws:region ap-northeast-1
-          pulumi up -y
-          ENV=$(pulumi stack output output) yarn test
-          export BUILD_STATUS="$?"
-          pulumi destroy -y && pulumi stack rm -y
-          exit ${BUILD_STATUS}
+
+          {
+            pulumi up -y &&
+            ENV=$(pulumi stack output output) yarn test &&
+            export BUILD_STATUS="$?" &&
+            echo "*** Test Succeeded ***"
+          } || {
+            echo "*** Test Succeeded ***"
+          }
+
+          { pulumi destroy -y ; pulumi stack rm -y } && exit ${BUILD_STATUS}
   deploy:
     working_directory: ~/workspace
     docker:
