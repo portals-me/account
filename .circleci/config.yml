@@ -23,15 +23,17 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - run: export STACK_NAME=myuon/portals-me-account/$(date +%s)
-      - run: pulumi stack init ${STACK_NAME}
-      - run: pulumi stack select ${STACK_NAME}
-      - run: pulumi config set aws:region ap-northeast-1
-      - run: pulumi up -y
-      - run: ENV=$(pulumi stack output output) yarn test
-      - run: export BUILD_STATUS="$?"
-      - run: pulumi destroy -y && pulumi stack rm -y
-      - run: exit ${BUILD_STATUS}
+      - run: |
+          export STACK_NAME=myuon/portals-me-account/$(date +%s)
+
+          pulumi stack init ${STACK_NAME}
+          pulumi stack select ${STACK_NAME}
+          pulumi config set aws:region ap-northeast-1
+          pulumi up -y
+          ENV=$(pulumi stack output output) yarn test
+          export BUILD_STATUS="$?"
+          pulumi destroy -y && pulumi stack rm -y
+          exit ${BUILD_STATUS}
   deploy:
     working_directory: ~/workspace
     docker:
