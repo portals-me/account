@@ -123,7 +123,8 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 
 	method, err := createAuthMethod(body)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
+		fmt.Printf("CreateAuthMethod: %+v\n", err.Error())
+		return events.APIGatewayProxyResponse{Body: "Invalid Input", StatusCode: 400}, nil
 	}
 
 	sess := session.Must(session.NewSession())
@@ -134,7 +135,8 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	// Get Idp ID
 	idpID, err := method.ObtainUserID(authTable)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
+		fmt.Printf("ObtainUserID: %+v\n", err.Error())
+		return events.APIGatewayProxyResponse{Body: "Invalid Input", StatusCode: 400}, nil
 	}
 
 	// Get UserInfo from "detail" part
@@ -143,13 +145,15 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		Get("id", idpID).
 		Range("sort", dynamo.Equal, "detail").
 		One(&record); err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 404}, nil
+		fmt.Printf("Dynamo Get: %+v\n", err.Error())
+		return events.APIGatewayProxyResponse{Body: "User not found", StatusCode: 404}, nil
 	}
 
 	// Create JWT
 	jwt, err := createJwt(record.UserInfo)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
+		fmt.Printf("CreateJWT: %+v\n", err.Error())
+		return events.APIGatewayProxyResponse{Body: "Failed to createJWT", StatusCode: 400}, nil
 	}
 
 	return events.APIGatewayProxyResponse{
