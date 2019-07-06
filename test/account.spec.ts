@@ -2,6 +2,7 @@ import axios from "axios";
 import AWS from "aws-sdk";
 const bcrypt = require("bcrypt");
 const uuid = require("uuid/v4");
+const genName = () => uuid().replace(/\-/g, "_");
 
 AWS.config.update({
   region: "ap-northeast-1"
@@ -16,7 +17,7 @@ const Dynamo = new AWS.DynamoDB.DocumentClient();
 
 const user = {
   id: uuid(),
-  name: `admin-${uuid()}`,
+  name: `admin-${genName()}`,
   password: uuid(),
   picture: "/avatar/admin",
   display_name: "admin"
@@ -24,7 +25,7 @@ const user = {
 
 const guestUser = {
   id: uuid(),
-  name: `guest-${uuid()}`,
+  name: `guest-${genName()}`,
   password: uuid(),
   picture: "/avatar/admin",
   display_name: "admin"
@@ -105,7 +106,7 @@ describe("Account", () => {
   });
 
   it("should update user_name", async () => {
-    const newName = uuid();
+    const newName = genName();
     const result = await axios.put(
       `${env.restApi}/self`,
       {
@@ -153,8 +154,24 @@ describe("Account", () => {
     ).rejects.toThrow("400");
   });
 
+  it("should not update user_name which is invalid", async () => {
+    await expect(
+      axios.put(
+        `${env.restApi}/self`,
+        {
+          name: "@aaa"
+        },
+        {
+          headers: {
+            Authorization: userJWT
+          }
+        }
+      )
+    ).rejects.toThrow("400");
+  });
+
   it("should update the profile", async () => {
-    const newName = uuid();
+    const newName = genName();
 
     const result = await axios.put(
       `${env.restApi}/self`,
@@ -174,7 +191,7 @@ describe("Account", () => {
   });
 
   it("should not update the profile using wrong JWT", async () => {
-    const newName = uuid();
+    const newName = genName();
 
     await expect(
       axios.put(

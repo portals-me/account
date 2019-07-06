@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -22,6 +23,10 @@ func updateUser(authTable dynamo.Table, oldUser user.UserInfo, userInput user.Us
 	if oldUser.Name != userInput.Name {
 		if len(userInput.Name) < 3 {
 			return errors.New("UserName too short")
+		}
+
+		if !regexp.MustCompile(`^[A-Za-z0-9_]*$`).MatchString(userInput.Name) {
+			return errors.New("Invalid UserName")
 		}
 
 		var _record user.UserInfo
