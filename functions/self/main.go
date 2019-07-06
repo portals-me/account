@@ -32,7 +32,7 @@ func updateUser(authTable dynamo.Table, oldUser user.UserInfo, newUser user.User
 		newUser.DisplayName = oldUser.DisplayName
 	}
 
-	if err := user.Validate(authTable, oldUser, newUser); err != nil {
+	if err := user.Validate(authTable, newUser); err != nil {
 		return err
 	}
 

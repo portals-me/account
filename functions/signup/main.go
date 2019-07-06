@@ -106,6 +106,10 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	idpID := uuid.NewV4().String()
 	userInfo.ID = idpID
 
+	if err := user.Validate(authTable, userInfo); err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
+	}
+
 	// Create a new user
 	if err := method.CreateUser(authTable, userInfo); err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil

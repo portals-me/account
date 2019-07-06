@@ -28,29 +28,27 @@ func (userInfo UserInfo) ToDDB() UserInfoDDB {
 	}
 }
 
-func Validate(authTable dynamo.Table, oldUser UserInfo, newUser UserInfo) error {
-	if oldUser.Name != newUser.Name {
-		if len(newUser.Name) < 3 {
-			return errors.New("UserName too short")
-		}
+func Validate(authTable dynamo.Table, newUser UserInfo) error {
+	if len(newUser.Name) < 3 {
+		return errors.New("UserName too short")
+	}
 
-		if !regexp.MustCompile(`^[A-Za-z0-9_]*$`).MatchString(newUser.Name) {
-			return errors.New("Invalid UserName")
-		}
+	if !regexp.MustCompile(`^[A-Za-z0-9_]*$`).MatchString(newUser.Name) {
+		return errors.New("Invalid UserName")
+	}
 
-		var records []UserInfo
-		if err := authTable.
-			Get("name", newUser.Name).
-			Index("name").
-			All(&records); err != nil {
-			fmt.Printf("%+v\n", err)
-			return errors.New("Something went wrong")
-		}
+	var records []UserInfo
+	if err := authTable.
+		Get("name", newUser.Name).
+		Index("name").
+		All(&records); err != nil {
+		fmt.Printf("%+v\n", err)
+		return errors.New("Something went wrong")
+	}
 
-		for _, record := range records {
-			if record.ID != newUser.ID {
-				return errors.New("UserName already exists")
-			}
+	for _, record := range records {
+		if record.ID != newUser.ID {
+			return errors.New("UserName already exists")
 		}
 	}
 
