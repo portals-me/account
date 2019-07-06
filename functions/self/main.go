@@ -5,63 +5,42 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/guregu/dynamo"
-	"github.com/pkg/errors"
 
 	"github.com/portals-me/account/lib/user"
 )
 
 var authTableName = os.Getenv("authTable")
 
-func updateUser(authTable dynamo.Table, oldUser user.UserInfo, userInput user.UserInfo) error {
-	if oldUser.Name != userInput.Name {
-		if len(userInput.Name) < 3 {
-			return errors.New("UserName too short")
-		}
+func updateUser(authTable dynamo.Table, oldUser user.UserInfo, newUser user.UserInfo) error {
+	fmt.Printf("%+v\n", oldUser)
+	fmt.Printf("%+v\n", newUser)
 
-		if !regexp.MustCompile(`^[A-Za-z0-9_]*$`).MatchString(userInput.Name) {
-			return errors.New("Invalid UserName")
-		}
-
-		var _record user.UserInfo
-		if err := authTable.
-			Get("name", userInput.Name).
-			Index("name").
-			One(&_record); err != dynamo.ErrNotFound {
-			return errors.New("UserName already exists")
-		}
-
-		if err := authTable.
-			Update("id", oldUser.ID).
-			Range("sort", "detail").
-			Set("name", userInput.Name).
-			Run(); err != nil {
-			return err
-		}
+	newUser.ID = oldUser.ID
+	if newUser.Name == "" {
+		newUser.Name = oldUser.Name
+	}
+	if newUser.Picture == "" {
+		newUser.Picture = oldUser.Picture
+	}
+	if newUser.DisplayName == "" {
+		newUser.DisplayName = oldUser.DisplayName
 	}
 
-	displayName := oldUser.DisplayName
-	if userInput.DisplayName != "" {
-		displayName = userInput.DisplayName
+	if err := user.Validate(authTable, oldUser, newUser); err != nil {
+		return err
 	}
 
-	picture := oldUser.Picture
-	if userInput.Picture != "" {
-		picture = userInput.Picture
+	if err := authTable.Put(newUser.ToDDB()).Run(); err != nil {
+		return err
 	}
 
-	return authTable.
-		Update("id", oldUser.ID).
-		Range("sort", "detail").
-		Set("display_name", displayName).
-		Set("picture", picture).
-		Run()
+	return nil
 }
 
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -92,6 +71,8 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	}
 
 	if err := updateUser(authTable, oldUser, userInput); err != nil {
+		fmt.Println(err.Error())
+
 		return events.APIGatewayProxyResponse{
 			Body: err.Error(),
 			Headers: map[string]string{

@@ -17,7 +17,7 @@ const Dynamo = new AWS.DynamoDB.DocumentClient();
 
 const user = {
   id: uuid(),
-  name: `admin-${genName()}`,
+  name: `admin_${genName()}`,
   password: uuid(),
   picture: "/avatar/admin",
   display_name: "admin"
@@ -25,10 +25,10 @@ const user = {
 
 const guestUser = {
   id: uuid(),
-  name: `guest-${genName()}`,
+  name: `guest_${genName()}`,
   password: uuid(),
-  picture: "/avatar/admin",
-  display_name: "admin"
+  picture: "/avatar/guest",
+  display_name: "guest"
 };
 
 const createUser = async (user: {
