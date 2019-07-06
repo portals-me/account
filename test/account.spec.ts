@@ -121,6 +121,38 @@ describe("Account", () => {
     expect(result.status).toEqual(204);
   });
 
+  it("should not update user_name less than 3 characters", async () => {
+    await expect(
+      axios.put(
+        `${env.restApi}/self`,
+        {
+          name: "aa"
+        },
+        {
+          headers: {
+            Authorization: userJWT
+          }
+        }
+      )
+    ).rejects.toThrow("400");
+  });
+
+  it("should not update user_name which is not unique", async () => {
+    await expect(
+      axios.put(
+        `${env.restApi}/self`,
+        {
+          name: guestUser.name
+        },
+        {
+          headers: {
+            Authorization: userJWT
+          }
+        }
+      )
+    ).rejects.toThrow("400");
+  });
+
   it("should update the profile", async () => {
     const newName = uuid();
 

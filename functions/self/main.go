@@ -24,6 +24,14 @@ func updateUser(authTable dynamo.Table, oldUser user.UserInfo, userInput user.Us
 			return errors.New("UserName too short")
 		}
 
+		var _record user.UserInfo
+		if err := authTable.
+			Get("name", userInput.Name).
+			Index("name").
+			One(&_record); err != dynamo.ErrNotFound {
+			return errors.New("UserName already exists")
+		}
+
 		if err := authTable.
 			Update("id", oldUser.ID).
 			Range("sort", "detail").
