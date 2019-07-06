@@ -19,7 +19,6 @@ import (
 var authTableName = os.Getenv("authTable")
 
 func updateUser(authTable dynamo.Table, oldUser user.UserInfo, userInput user.UserInfo) error {
-	// update name
 	if oldUser.Name != userInput.Name {
 		if len(userInput.Name) < 3 {
 			return errors.New("UserName too short")

@@ -17,18 +17,30 @@ const Dynamo = new AWS.DynamoDB.DocumentClient();
 const user = {
   id: uuid(),
   name: `admin-${uuid()}`,
-  password: uuid()
+  password: uuid(),
+  picture: "/avatar/admin",
+  display_name: "admin"
 };
 
-beforeAll(async () => {
+const guestUser = {
+  id: uuid(),
+  name: `guest-${uuid()}`,
+  password: uuid(),
+  picture: "/avatar/admin",
+  display_name: "admin"
+};
+
+const createUser = async (user: {
+  id: string;
+  name: string;
+  password: string;
+  picture: string;
+  display_name: string;
+}) => {
   await Dynamo.put({
-    Item: {
-      id: user.id,
-      sort: "detail",
-      name: user.name,
-      picture: "picture url",
-      display_name: "admin user"
-    },
+    Item: Object.assign(user, {
+      sort: "detail"
+    }),
     TableName: env.tableName
   }).promise();
 
@@ -40,9 +52,39 @@ beforeAll(async () => {
     },
     TableName: env.tableName
   }).promise();
+};
+
+const deleteUser = async (user: { id: string; name: string }) => {
+  await Dynamo.delete({
+    Key: {
+      id: user.id,
+      sort: "detail"
+    },
+    TableName: env.tableName
+  }).promise();
+
+  await Dynamo.delete({
+    Key: {
+      id: user.id,
+      sort: `name-pass##${user.name}`
+    },
+    TableName: env.tableName
+  }).promise();
+};
+
+beforeAll(async () => {
+  await createUser(user);
+  await createUser(guestUser);
+});
+
+afterAll(async () => {
+  await deleteUser(user);
+  await deleteUser(guestUser);
 });
 
 describe("Account", () => {
+  let userJWT: string;
+
   it("should signin with password", async () => {
     const result = await axios.post(`${env.restApi}/signin`, {
       auth_type: "password",
@@ -52,11 +94,68 @@ describe("Account", () => {
       }
     });
     expect(result.data).toBeTruthy();
+
+    userJWT = result.data;
   });
 
   it("should get the user id by name", async () => {
     const result = await axios.get(`${env.restApi}/username/${user.name}`);
     expect(result.data.id).toEqual(user.id);
     expect(result.data.name).toEqual(user.name);
+  });
+
+  it("should update user_name", async () => {
+    const newName = uuid();
+    const result = await axios.put(
+      `${env.restApi}/self`,
+      {
+        name: newName
+      },
+      {
+        headers: {
+          Authorization: userJWT
+        }
+      }
+    );
+
+    expect(result.status).toEqual(204);
+  });
+
+  it("should update the profile", async () => {
+    const newName = uuid();
+
+    const result = await axios.put(
+      `${env.restApi}/self`,
+      {
+        name: newName,
+        picture: "new picture",
+        display_name: "new display_name"
+      },
+      {
+        headers: {
+          Authorization: userJWT
+        }
+      }
+    );
+
+    expect(result.status).toEqual(204);
+  });
+
+  it("should not update the profile using wrong JWT", async () => {
+    const newName = uuid();
+
+    await expect(
+      axios.put(
+        `${env.restApi}/self`,
+        {
+          name: newName
+        },
+        {
+          headers: {
+            Authorization: "xxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxx"
+          }
+        }
+      )
+    ).rejects.toThrow("401");
   });
 });
