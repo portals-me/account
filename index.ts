@@ -8,7 +8,8 @@ import { createLambdaFunction } from "./infrastructure/lambda";
 
 const config = {
   service: new pulumi.Config().name,
-  stage: pulumi.getStack()
+  stage: pulumi.getStack(),
+  region: "ap-northeast-1"
 };
 
 const parameter = {
@@ -289,6 +290,99 @@ const getUserByNameIntegration = createLambdaMethod(
     handler: getUserByName
   }
 );
+
+const authorizerFunction = createLambdaFunction("authorizer", {
+  filepath: "authorizer",
+  role: lambdaRole,
+  handlerName: `${config.service}-${config.stage}-authorizer`,
+  lambdaOptions: {
+    environment: {
+      variables: {
+        timestamp: new Date().toLocaleString(),
+        jwtPrivateKey: parameter.jwtPrivate
+      }
+    }
+  }
+});
+
+const authorizerRole = new aws.iam.Role("authorizer-role", {
+  assumeRolePolicy: aws.iam
+    .getPolicyDocument({
+      version: "2012-10-17",
+      statements: [
+        {
+          effect: "Allow",
+          principals: [
+            {
+              type: "Service",
+              identifiers: ["apigateway.amazonaws.com"]
+            }
+          ],
+          actions: ["sts:AssumeRole"]
+        }
+      ]
+    })
+    .then(result => result.json)
+});
+new aws.iam.RolePolicy("authorizer-role-policy", {
+  role: authorizerRole,
+  policy: aws.iam
+    .getPolicyDocument({
+      version: "2012-10-17",
+      statements: [
+        {
+          effect: "Allow",
+          actions: ["lambda:invokeFunction"],
+          resources: ["*"]
+        }
+      ]
+    })
+    .then(result => result.json)
+});
+
+const authorizer = new aws.apigateway.Authorizer("authorizer", {
+  restApi: accountAPI,
+  type: "TOKEN",
+  name: `${config.service}-${config.stage}-authorizer`,
+  authorizerUri: pulumi.interpolate`arn:aws:apigateway:${
+    config.region
+  }:lambda:path/2015-03-31/functions/${authorizerFunction.arn}/invocations`,
+  authorizerCredentials: authorizerRole.arn
+});
+
+const selfFunction = createLambdaFunction("self-function", {
+  filepath: "self",
+  role: lambdaRole,
+  handlerName: `${config.service}-${config.stage}-self`,
+  lambdaOptions: {
+    environment: {
+      variables: {
+        timestamp: new Date().toLocaleString(),
+        authTable: accountTable.name
+      }
+    }
+  }
+});
+
+const selfResource = createCORSResource("self", {
+  parentId: accountAPI.rootResourceId,
+  pathPart: "self",
+  restApi: accountAPI
+});
+
+const getSelfIntegration = createLambdaMethod("get-self-integration", {
+  authorization: "CUSTOM",
+  httpMethod: "GET",
+  resource: selfResource,
+  restApi: accountAPI,
+  integration: {
+    type: "AWS_PROXY"
+  },
+  handler: selfFunction,
+  method: {
+    authorizerId: authorizer.id
+  }
+});
 
 const accountAPIDeployment = new aws.apigateway.Deployment(
   "account-api-deployment",
