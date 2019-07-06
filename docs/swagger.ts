@@ -168,21 +168,11 @@ const User = new devkit.Component(
 );
 
 swagger.addPath(
-  "/users/{userId}",
+  "/self",
   "get",
   new devkit.Path({
-    summary: "Get the user by id",
-    tags: ["auth"],
-    parameters: [
-      {
-        in: "path",
-        required: true,
-        name: "userId",
-        schema: devkit.Schema.string({
-          format: "uuid"
-        })
-      }
-    ]
+    summary: "Get the requested user",
+    tags: ["self"]
   }).addResponse(
     "200",
     new devkit.Response({
@@ -192,21 +182,11 @@ swagger.addPath(
 );
 
 swagger.addPath(
-  "/users/{userId}",
+  "/self",
   "put",
   new devkit.Path({
-    summary: "Update the user",
-    tags: ["auth"],
-    parameters: [
-      {
-        in: "path",
-        required: true,
-        name: "userId",
-        schema: devkit.Schema.string({
-          format: "uuid"
-        })
-      }
-    ]
+    summary: "Update the requested user",
+    tags: ["self"]
   })
     .addRequestBody(
       new devkit.RequestBody().addContent(

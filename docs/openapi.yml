@@ -60,18 +60,11 @@ paths:
                     format: uuid
                   name:
                     type: string
-  "/users/{userId}":
+  /self:
     get:
-      summary: Get the user by id
+      summary: Get the requested user
       tags:
-        - auth
-      parameters:
-        - in: path
-          required: true
-          name: userId
-          schema:
-            type: string
-            format: uuid
+        - self
       responses:
         "200":
           description: Returns User record
@@ -80,16 +73,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
     put:
-      summary: Update the user
+      summary: Update the requested user
       tags:
-        - auth
-      parameters:
-        - in: path
-          required: true
-          name: userId
-          schema:
-            type: string
-            format: uuid
+        - self
       requestBody:
         content:
           application/json:
