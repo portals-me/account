@@ -372,7 +372,7 @@ const selfResource = createCORSResource("self", {
 
 const getSelfIntegration = createLambdaMethod("get-self-integration", {
   authorization: "CUSTOM",
-  httpMethod: "GET",
+  httpMethod: "PUT",
   resource: selfResource,
   restApi: accountAPI,
   integration: {

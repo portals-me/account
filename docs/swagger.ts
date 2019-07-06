@@ -169,20 +169,6 @@ const User = new devkit.Component(
 
 swagger.addPath(
   "/self",
-  "get",
-  new devkit.Path({
-    summary: "Get the requested user",
-    tags: ["self"]
-  }).addResponse(
-    "200",
-    new devkit.Response({
-      description: "Returns User record"
-    }).addContent("application/json", User)
-  )
-);
-
-swagger.addPath(
-  "/self",
   "put",
   new devkit.Path({
     summary: "Update the requested user",

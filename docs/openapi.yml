@@ -61,17 +61,6 @@ paths:
                   name:
                     type: string
   /self:
-    get:
-      summary: Get the requested user
-      tags:
-        - self
-      responses:
-        "200":
-          description: Returns User record
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
     put:
       summary: Update the requested user
       tags:
