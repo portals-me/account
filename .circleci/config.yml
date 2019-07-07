@@ -36,7 +36,7 @@ jobs:
             export BUILD_STATUS="$?" &&
             echo "*** Test Succeeded ***"
           } || {
-            echo "*** Test Succeeded ***"
+            echo "*** Test Failed ***"
           }
 
           ( pulumi destroy -y ; pulumi stack rm -y ) && exit ${BUILD_STATUS}
