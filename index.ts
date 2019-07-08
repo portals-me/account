@@ -370,7 +370,7 @@ const selfResource = createCORSResource("self", {
   restApi: accountAPI
 });
 
-const getSelfIntegration = createLambdaMethod("get-self-integration", {
+const putSelfIntegration = createLambdaMethod("get-self-integration", {
   authorization: "CUSTOM",
   httpMethod: "PUT",
   resource: selfResource,
@@ -397,7 +397,8 @@ const accountAPIDeployment = new aws.apigateway.Deployment(
       signinLambdaIntegration,
       twitterPostIntegration,
       twitterGetIntegration,
-      getUserByNameIntegration
+      getUserByNameIntegration,
+      putSelfIntegration
     ]
   }
 );
