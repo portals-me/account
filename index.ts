@@ -42,7 +42,14 @@ const parameter = {
         withDecryption: true
       })
       .then(result => result.value)
-  }
+  },
+  domain: aws.ssm
+    .getParameter({
+      name: config.stage.startsWith("test")
+        ? `${config.service}-stg-domain-prefix`
+        : `${config.service}-${config.stage}-domain-prefix`
+    })
+    .then(result => result.value)
 };
 
 const lambdaRole = new aws.iam.Role("auth-lambda-role", {
@@ -358,7 +365,8 @@ const selfFunction = createLambdaFunction("self-function", {
     environment: {
       variables: {
         timestamp: new Date().toLocaleString(),
-        authTable: accountTable.name
+        authTable: accountTable.name,
+        domain: parameter.domain
       }
     }
   }
@@ -405,5 +413,6 @@ const accountAPIDeployment = new aws.apigateway.Deployment(
 
 export const output = {
   restApi: accountAPIDeployment.invokeUrl,
-  tableName: accountTable.name
+  tableName: accountTable.name,
+  domain: parameter.domain
 };
