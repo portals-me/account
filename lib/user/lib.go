@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/guregu/dynamo"
 )
@@ -57,4 +58,40 @@ func Validate(authTable dynamo.Table, newUser UserInfo) error {
 	}
 
 	return nil
+}
+
+// -- User Repository --
+
+type Repository struct {
+	table dynamo.Table
+}
+
+func NewRepository(table dynamo.Table) Repository {
+	return Repository{
+		table: table,
+	}
+}
+
+// Get user object by ID
+func (repo Repository) Get(userID string, user *UserInfo) error {
+	return repo.table.
+		Get("id", userID).
+		Range("sort", dynamo.Equal, "detail").
+		Consistent(true).
+		One(user)
+}
+
+// Put user object
+// domain string: the prefix domain for the picture
+func (repo Repository) Put(user UserInfo, domain string) error {
+	// check picture domain prefix
+	if !strings.HasPrefix(user.Picture, domain) {
+		return errors.New("Unexpected domain: " + user.Picture)
+	}
+
+	if err := Validate(repo.table, user); err != nil {
+		return err
+	}
+
+	return repo.table.Put(user.ToDDB()).Run()
 }
