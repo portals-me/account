@@ -10,7 +10,6 @@ jobs:
       - image: myuon/portals-me-account-ci:latest
     steps:
       - checkout
-      - run: npm i -g yarn
       - run: yarn
       - persist_to_workspace:
           root: .
