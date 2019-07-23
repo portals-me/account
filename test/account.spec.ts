@@ -11,6 +11,7 @@ AWS.config.update({
 const env: {
   restApi: string;
   tableName: string;
+  domain: string;
 } = JSON.parse(process.env.ENV);
 
 const Dynamo = new AWS.DynamoDB.DocumentClient();
@@ -19,7 +20,7 @@ const user = {
   id: uuid(),
   name: `admin_${genName()}`,
   password: uuid(),
-  picture: "/avatar/admin",
+  picture: `${env.domain}/avatar/admin`,
   display_name: "admin"
 };
 
@@ -27,7 +28,7 @@ const guestUser = {
   id: uuid(),
   name: `guest_${genName()}`,
   password: uuid(),
-  picture: "/avatar/guest",
+  picture: `${env.domain}/avatar/guest`,
   display_name: "guest"
 };
 
@@ -177,7 +178,7 @@ describe("Account", () => {
       `${env.restApi}/self`,
       {
         name: newName,
-        picture: "new picture",
+        picture: `${env.domain}/newnewnew`,
         display_name: "new display_name"
       },
       {
@@ -188,6 +189,24 @@ describe("Account", () => {
     );
 
     expect(result.status).toEqual(204);
+  });
+
+  it("should not update the profile with invalid url", async () => {
+    const newName = genName();
+
+    expect(
+      axios.put(
+        `${env.restApi}/self`,
+        {
+          picture: "https://example.com/invalid_profile"
+        },
+        {
+          headers: {
+            Authorization: userJWT
+          }
+        }
+      )
+    ).rejects.toThrow("400");
   });
 
   it("should not update the profile using wrong JWT", async () => {

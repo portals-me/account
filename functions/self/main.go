@@ -16,6 +16,8 @@ import (
 )
 
 var authTableName = os.Getenv("authTable")
+var allowedDomainPrefix = os.Getenv("domain")
+var userRepo user.Repository
 
 func updateUser(authTable dynamo.Table, oldUser user.UserInfo, newUser user.UserInfo) error {
 	fmt.Printf("%+v\n", oldUser)
@@ -32,11 +34,7 @@ func updateUser(authTable dynamo.Table, oldUser user.UserInfo, newUser user.User
 		newUser.DisplayName = oldUser.DisplayName
 	}
 
-	if err := user.Validate(authTable, newUser); err != nil {
-		return err
-	}
-
-	if err := authTable.Put(newUser.ToDDB()).Run(); err != nil {
+	if err := userRepo.Put(newUser, allowedDomainPrefix); err != nil {
 		return err
 	}
 
@@ -48,6 +46,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	db := dynamo.NewFromIface(dynamodb.New(sess))
 
 	authTable := db.Table(authTableName)
+	userRepo = user.NewRepository(authTable)
 
 	var userInput user.UserInfo
 	if err := json.Unmarshal([]byte(request.Body), &userInput); err != nil {
@@ -61,11 +60,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	}
 
 	var oldUser user.UserInfo
-	if err := authTable.
-		Get("id", request.RequestContext.Authorizer["id"]).
-		Range("sort", dynamo.Equal, "detail").
-		Consistent(true).
-		One(&oldUser); err != nil {
+	if err := userRepo.Get(request.RequestContext.Authorizer["id"].(string), &oldUser); err != nil {
 		fmt.Println(err.Error())
 		panic("unreachable")
 	}
