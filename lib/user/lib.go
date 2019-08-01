@@ -95,3 +95,8 @@ func (repo Repository) Put(user UserInfo, domain string) error {
 
 	return repo.table.Put(user.ToDDB()).Run()
 }
+
+// AsDynamoTable is used for extracting the internal dynamo table
+func (repo Repository) AsDynamoTable() dynamo.Table {
+	return repo.table
+}
