@@ -16,7 +16,7 @@
   "devDependencies": {
     "@types/jest": "^24.0.15",
     "aws-sdk": "^2.488.0",
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "bcrypt": "^3.0.6",
     "jest": "^24.8.0",
     "ts-jest": "^24.0.2",
